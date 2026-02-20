@@ -1,0 +1,401 @@
+-----------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\citla\Downloads\pset3_data\logs
+> \ps3.log
+  log type:  text
+ opened on:  20 Feb 2026, 12:07:34
+
+. 
+. ** Part A: Clean and validate people_full.csv
+. import delimited "people_full.csv", clear stringcol
+> s(_all)
+(encoding automatically selected: ISO-8859-1)
+(11 vars, 26,065 obs)
+
+. 
+. ** Standardize strings
+. replace location = strtrim(location)
+(8,630 real changes made)
+
+. replace location = strlower(location)
+(17,520 real changes made)
+
+. replace location = strproper(location)
+(26,065 real changes made)
+
+. replace sex = strtrim(sex)
+(0 real changes made)
+
+. 
+. ** Convert numeric columns
+. foreach v in person_id household_id age height_cm w
+> eight_kg systolic_bp diastolic_bp {
+  2.     replace `v' = "" if `v' == "NA"
+  3.     destring `v', replace
+  4. }
+(0 real changes made)
+person_id: all characters numeric; replaced as int
+(0 real changes made)
+household_id: all characters numeric; replaced as lon
+> g
+(781 real changes made)
+age: all characters numeric; replaced as byte
+(781 missing values generated)
+(1,303 real changes made)
+height_cm: all characters numeric; replaced as double
+(1303 missing values generated)
+(2,085 real changes made)
+weight_kg: all characters numeric; replaced as double
+(2085 missing values generated)
+(3,127 real changes made)
+systolic_bp: all characters numeric; replaced as int
+(3127 missing values generated)
+(3,127 real changes made)
+diastolic_bp: all characters numeric; replaced as int
+(3127 missing values generated)
+
+. 
+. ** Date/time conversion
+. gen visit_date = date(date_str, "MDY")
+
+. format visit_date %td
+
+. gen people_year = yofd(visit_date)
+
+. gen visit_time = clock(time_str, "hms")
+
+. format visit_time %tcHH:MM:SS
+
+. 
+. ** QA checks
+. assert !missing(person_id)
+
+. isid person_id people_year
+
+. bysort person_id: assert _N == 5
+
+. 
+. ** Categorical encodings
+. encode sex, gen(sex_id)
+
+. encode location, gen(location_id)
+
+. 
+. ** Grouped variables
+. bysort household_id: gen hh_n = _N
+
+. bysort household_id (person_id people_year): gen hh
+> _row = _n
+
+. bysort household_id: egen hh_mean_age = mean(age)
+
+. 
+. ** Export
+. export delimited "processed_data/ps3_people_clean.c
+> sv", replace
+file processed_data/ps3_people_clean.csv saved
+
+. 
+. ** Part A: Clean and validate households.csv
+. import delimited "households.csv", clear stringcols
+> (_all)
+(encoding automatically selected: ISO-8859-1)
+(6 vars, 3,251 obs)
+
+. 
+. ** Convert numeric columns
+. foreach v in household_id year region_id income hh_
+> size {
+  2.     replace `v' = "" if `v' == "NA"
+  3.     destring `v', replace
+  4. }
+(0 real changes made)
+household_id: all characters numeric; replaced as lon
+> g
+(0 real changes made)
+year: all characters numeric; replaced as int
+(0 real changes made)
+region_id: all characters numeric; replaced as byte
+(0 real changes made)
+income: all characters numeric; replaced as long
+(0 real changes made)
+hh_size: all characters numeric; replaced as byte
+
+. 
+. ** Categorical encoding
+. encode region, gen(region_code)
+
+. label list region_code
+region_code:
+           1 Central
+           2 Coastal
+           3 Desert
+           4 East
+           5 Lakes
+           6 Mountain
+           7 North
+           8 Plains
+           9 South
+          10 West
+
+. 
+. ** Grouped variables
+. bysort year: egen year_mean_income = mean(income)
+
+. bysort region_code year: egen region_year_mean_inco
+> me = mean(income)
+
+. bysort region_code (year): gen region_year_row = _n
+
+. 
+. ** Regression
+. reg income i.region_code c.hh_size##c.year
+
+      Source |       SS           df       MS      Nu
+> mber of obs   =     3,251
+-------------+----------------------------------   F(
+> 12, 3238)     =      2.16
+       Model |  2.4375e+10        12  2.0313e+09   Pr
+> ob > F        =    0.0113
+    Residual |  3.0459e+12     3,238   940665410   R-
+> squared       =    0.0079
+-------------+----------------------------------   Ad
+> j R-squared   =    0.0043
+       Total |  3.0702e+12     3,250   944692192   Ro
+> ot MSE        =     30670
+
+-----------------------------------------------------
+> -------------------------
+      income | Coefficient  Std. err.      t    P>|t|
+>      [95% con                                      
+>              f. interval]
+-------------+---------------------------------------
+> -------------------------
+ region_code |
+    Coastal  |  -4307.603   2406.766    -1.79   0.074
+>     -9026.542                                      
+>                  411.3361
+     Desert  |  -1649.646   2463.062    -0.67   0.503
+>     -6478.965                                      
+>                  3179.673
+       East  |  -4450.786    2364.67    -1.88   0.060
+>     -9087.188                                      
+>                  185.6158
+      Lakes  |   1658.144   2456.666     0.67   0.500
+>     -3158.632                                      
+>                  6474.921
+   Mountain  |   835.0835   2399.783     0.35   0.728
+>     -3870.163                                      
+>                   5540.33
+      North  |  -3864.784   2374.125    -1.63   0.104
+>     -8519.724                                      
+>                   790.156
+     Plains  |  -2523.088   2478.304    -1.02   0.309
+>     -7382.291                                      
+>                  2336.116
+      South  |  -5997.278   2436.412    -2.46   0.014
+>     -10774.34                                      
+>                 -1220.213
+       West  |  -340.6519   2360.992    -0.14   0.885
+>     -4969.842                                      
+>                  4288.538
+             |
+     hh_size |  -156818.3   549446.9    -0.29   0.775
+>      -1234117                                      
+>                  920480.5
+        year |   643.5645   911.9977     0.71   0.480
+>     -1144.587                                      
+>                  2431.716
+             |
+   c.hh_size#|
+      c.year |   77.67602    271.605     0.29   0.775
+>     -454.8591                                      
+>                  610.2111
+             |
+       _cons |   -1229524    1844977    -0.67   0.505
+>      -4846966                                      
+>                   2387917
+-----------------------------------------------------
+> -------------------------
+
+. 
+. ** Export
+. export delimited "processed_data/ps3_households_cle
+> an.csv", replace
+file processed_data/ps3_households_clean.csv saved
+
+. 
+. ** Part A: Clean and validate regions.csv
+. import delimited "regions.csv", clear stringcols(_a
+> ll) varnames(1)
+(encoding automatically selected: ISO-8859-1)
+(5 vars, 80 obs)
+
+. describe
+
+Contains data
+ Observations:            80                  
+    Variables:             5                  
+-----------------------------------------------------
+Variable      Storage   Display    Value
+    name         type    format    label      Variabl
+> e label
+-----------------------------------------------------
+region_id       str2    %9s                   
+region_name     str8    %9s                   
+year            str4    %9s                   
+median_income   str6    %9s                   
+population      str6    %9s                   
+-----------------------------------------------------
+Sorted by: 
+     Note: Dataset has changed since last saved.
+
+. 
+. ** Convert numeric columns
+. foreach v in region_id year median_income populatio
+> n {
+  2.     replace `v' = "" if `v' == "NA"
+  3.     destring `v', replace
+  4. }
+(5 real changes made)
+region_id: all characters numeric; replaced as byte
+(5 missing values generated)
+(5 real changes made)
+year: all characters numeric; replaced as int
+(5 missing values generated)
+(5 real changes made)
+median_income: all characters numeric; replaced as lo
+> ng
+(5 missing values generated)
+(5 real changes made)
+population: all characters numeric; replaced as long
+(5 missing values generated)
+
+. 
+. ** Drop missing panel keys
+. drop if missing(region_id) | missing(year)
+(5 observations deleted)
+
+. 
+. ** Resolve duplicates
+. duplicates report region_id year
+
+Duplicates in terms of region_id year
+
+--------------------------------------
+   Copies | Observations       Surplus
+----------+---------------------------
+        1 |           75             0
+--------------------------------------
+
+. duplicates drop region_id year, force
+
+Duplicates in terms of region_id year
+
+(0 observations are duplicates)
+
+. 
+. ** Verify uniqueness and declare panel
+. isid region_id year
+
+. xtset region_id year
+
+Panel variable: region_id (strongly balanced)
+ Time variable: year, 2021 to 2025
+         Delta: 1 unit
+
+. 
+. ** Lag-based variables
+. gen yoy_change_median_income = median_income - L.me
+> dian_income
+(15 missing values generated)
+
+. gen median_income_growth_rate = (median_income - L.
+> median_income) / L.median_income
+(15 missing values generated)
+
+. 
+. ** Panel diagnostics
+. xtdescribe
+
+region_id:  1, 2, ..., 15                            
+>         n =         15
+    year:  2021, 2022, ..., 2025                     
+>         T =          5
+           Delta(year) = 1 unit
+           Span(year)  = 5 periods
+           (region_id*year uniquely identifies each o
+> bservation)
+
+Distribution of T_i:   min      5%     25%       50% 
+>       75%     95%     max
+                         5       5       5         5 
+>         5       5       5
+
+     Freq.  Percent    Cum. |  Pattern
+ ---------------------------+---------
+       15    100.00  100.00 |  11111
+ ---------------------------+---------
+       15    100.00         |  XXXXX
+
+. xtsum median_income population yoy_change_median_in
+> come median_income_growth_rate
+
+Variable         |      Mean   Std. dev.       Min   
+>      Max |    Observations
+-----------------+-----------------------------------
+> ---------+----------------
+media~me overall |  71821.33   17045.69      44998   
+>   117108 |                                         
+>                N =      75
+         between |              10260.8    56092.4   
+>  95379.4 |                                         
+>                n =      15
+         within  |             13818.92   47685.93   
+> 115594.7 |     T =       5
+                 |                                   
+>          |
+popula~n overall |  701487.8     111303     469165   
+>   905489 |                                         
+>                N =      75
+         between |             107982.3   541192.8   
+> 852863.2 |                                         
+>                n =      15
+         within  |             36857.27     603036   
+> 793138.6 |     T =       5
+                 |                                   
+>          |
+yoy_ch~e overall |   -2678.2    19754.8     -56492   
+>    35955 |                                         
+>                N =      60
+         between |             5418.039   -13929.5   
+>  5998.25 |                                         
+>                n =      15
+         within  |             19036.53  -47173.45   
+>  42449.8 |     T =       4
+                 |                                   
+>          |
+media~te overall |  .0058845   .2726874  -.4823923   
+> .5343608 |                                         
+>                N =      60
+         between |             .0714584  -.1020232   
+> .1756765 |                                         
+>                n =      15
+         within  |             .2636508  -.6308615   
+> .5776059 |     T =       4
+
+. 
+. ** Export
+. export delimited "processed_data/ps3_regions_clean.
+> csv", replace
+file processed_data/ps3_regions_clean.csv saved
+
+. 
+. ** Close log
+. log close
+      name:  <unnamed>
+       log:  C:\Users\citla\Downloads\pset3_data\logs
+> \ps3.log
+  log type:  text
+ closed on:  20 Feb 2026, 12:07:35
+-----------------------------------------------------
