@@ -1,0 +1,3725 @@
+-----------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\citla\Downloads\PS5\logs/ps5.lo
+> g
+  log type:  text
+ opened on:  26 Feb 2026, 17:18:07
+
+. 
+. display "Log started: $S_DATE $S_TIME"
+Log started: 26 Feb 2026 17:18:07
+
+. 
+. ** TASK 2: Import the data without forcing all colu
+> mns to strings
+. 
+. import delimited "data/psam_p50.csv", clear varname
+> s(1)
+(encoding automatically selected: UTF-8)
+(286 vars, 6,938 obs)
+
+. 
+. ** Verify dataset has more than 100 variables
+. ds
+rt         wkl        fesrp      pwgtp11
+serialno   wkwn       fferp      pwgtp12
+division   wrk        ffodp      pwgtp13
+sporder    yoep       fgclp      pwgtp14
+puma       anc        fgcmp      pwgtp15
+region     anc1p      fgcrp      pwgtp16
+state      anc2p      fhicovp    pwgtp17
+adjinc     decade     fhimrksp   pwgtp18
+pwgtp      dis        fhins1p    pwgtp19
+agep       drivesp    fhins2p    pwgtp20
+cit        esp        fhins3c    pwgtp21
+citwp      esr        fhins3p    pwgtp22
+cow        fod1p      fhins4c    pwgtp23
+ddrs       fod2p      fhins4p    pwgtp24
+dear       hicov      fhins5c    pwgtp25
+deye       hisp       fhins5p    pwgtp26
+dout       indp       fhins6p    pwgtp27
+dphy       jwap       fhins7p    pwgtp28
+drat       jwdp       fhisp      pwgtp29
+dratx      lanp       findp      pwgtp30
+drem       migpuma    fintp      pwgtp31
+eng        migsp      fjwdp      pwgtp32
+fer        msp        fjwmnp     pwgtp33
+gcl        naicsp     fjwrip     pwgtp34
+gcm        nativity   fjwtrnsp   pwgtp35
+gcr        nop        flanp      pwgtp36
+himrks     oc         flanxp     pwgtp37
+hins1      occp       fmarp      pwgtp38
+hins2      paoc       fmarhdp    pwgtp39
+hins3      pernp      fmarhmp    pwgtp40
+hins4      pincp      fmarhtp    pwgtp41
+hins5      pobp       fmarhwp    pwgtp42
+hins6      povpip     fmarhyp    pwgtp43
+hins7      powpuma    fmigp      pwgtp44
+intp       powsp      fmigsp     pwgtp45
+jwmnp      privcov    fmilpp     pwgtp46
+jwrip      pubcov     fmilsp     pwgtp47
+jwtrns     qtrbir     foccp      pwgtp48
+lanx       rac1p      foip       pwgtp49
+mar        rac2p      fpap       pwgtp50
+marhd      rac3p      fpernp     pwgtp51
+marhm      racaian    fpincp     pwgtp52
+marht      racasn     fpobp      pwgtp53
+marhw      racblk     fpowsp     pwgtp54
+marhyp     racnh      fprivcovp  pwgtp55
+mig        racnum     fpubcovp   pwgtp56
+mil        racpi      fracp      pwgtp57
+mlpa       racsor     frelshipp  pwgtp58
+mlpb       racwht     fretp      pwgtp59
+mlpcd      rc         fschgp     pwgtp60
+mlpe       sciengp    fschlp     pwgtp61
+mlpfg      sciengrlp  fschp      pwgtp62
+mlpik      sfn        fsemp      pwgtp63
+mlphj      sfr        fsexp      pwgtp64
+nwab       socp       fssip      pwgtp65
+nwav       vpsp       fssp       pwgtp66
+nwla       waob       fwagp      pwgtp67
+nwlk       fagep      fwkhp      pwgtp68
+nwre       fancp      fwklp      pwgtp69
+oip        fcitp      fwkwnp     pwgtp70
+pap        fcitwp     fwrkp      pwgtp71
+relshipp   fcowp      fyoep      pwgtp72
+retp       fddrsp     pwgtp1     pwgtp73
+sch        fdearp     pwgtp2     pwgtp74
+schg       fdeyep     pwgtp3     pwgtp75
+schl       fdisp      pwgtp4     pwgtp76
+semp       fdoutp     pwgtp5     pwgtp77
+sex        fdphyp     pwgtp6     pwgtp78
+ssip       fdratp     pwgtp7     pwgtp79
+ssp        fdratxp    pwgtp8     pwgtp80
+wagp       fdremp     pwgtp9
+wkhp       fengp      pwgtp10
+
+. local nvars = r(varlist)
+
+. local nv = wordcount("`nvars'")
+
+. display "Number of variables in dataset: `nv'"
+Number of variables in dataset: 286
+
+. assert `nv' > 100
+
+. display "CONFIRMED: dataset has more than 100 varia
+> bles."
+CONFIRMED: dataset has more than 100 variables.
+
+. 
+. ** TASK 3: Define numeric and categorical column ma
+> cros
+. 
+. ** Define macro for numeric variables (lowercase to
+>  match dataset)
+. local numeric_vars "agep wagp wkhp schl pincp povpi
+> p esr cow mar sex rac1p hisp adjinc pwgtp"
+
+. 
+. * Define macro for categorical (string) variables (
+> lowercase to match dataset)
+. local categorical_vars "naicsp socp"
+
+. 
+. ** Display both macro contents in the log
+. display "numeric_vars macro: `numeric_vars'"
+numeric_vars macro: agep wagp wkhp schl pincp povpip 
+> esr cow mar sex rac1p hisp adjinc pwgtp
+
+. display "categorical_vars macro: `categorical_vars'
+> "
+categorical_vars macro: naicsp socp
+
+. 
+. ** --- Loop over numeric_vars: verify existence and
+>  convert to numeric if needed ---
+. foreach v of local numeric_vars {
+  2.     * Verify variable exists
+.     capture confirm variable `v'
+  3.     if _rc != 0 {
+  4.         display as error "WARNING: variable `v' 
+> not found in dataset."
+  5.     }
+  6.     else {
+  7.         display as txt "Confirmed variable exist
+> s: `v'"
+  8.         * Replace common missing-value strings w
+> ith blank, then destring if needed
+.         capture confirm string variable `v'
+  9.         if _rc == 0 {
+ 10.             replace `v' = "" if inlist(strtrim(`
+> v'), "NA", ".", "N/A", "")
+ 11.             destring `v', replace
+ 12.             display as txt "  -> destringed: `v'
+> "
+ 13.         }
+ 14.     }
+ 15. }
+Confirmed variable exists: agep
+Confirmed variable exists: wagp
+Confirmed variable exists: wkhp
+Confirmed variable exists: schl
+Confirmed variable exists: pincp
+Confirmed variable exists: povpip
+Confirmed variable exists: esr
+Confirmed variable exists: cow
+Confirmed variable exists: mar
+Confirmed variable exists: sex
+Confirmed variable exists: rac1p
+Confirmed variable exists: hisp
+Confirmed variable exists: adjinc
+Confirmed variable exists: pwgtp
+
+. 
+. ** --- Loop over categorical_vars: clean strings an
+> d encode to _id variables ---
+. foreach v of local categorical_vars {
+  2.     capture confirm variable `v'
+  3.     if _rc != 0 {
+  4.         display as error "WARNING: variable `v' 
+> not found in dataset."
+  5.     }
+  6.     else {
+  7.         display as txt "Confirmed variable exist
+> s: `v'"
+  8.         * Standardize string formatting
+.         replace `v' = strtrim(`v')
+  9.         replace `v' = strlower(`v')
+ 10.         replace `v' = strproper(`v')
+ 11.         * Encode to numeric _id variable
+.         encode `v', gen(`v'_id)
+ 12.         display as txt "  -> encoded: `v'_id cre
+> ated."
+ 13.     }
+ 14. }
+Confirmed variable exists: naicsp
+(0 real changes made)
+(1,682 real changes made)
+(1,682 real changes made)
+  -> encoded: naicsp_id created.
+Confirmed variable exists: socp
+(0 real changes made)
+(629 real changes made)
+(629 real changes made)
+  -> encoded: socp_id created.
+
+. 
+. ** TASK 4: QA checks and save cleaned full file
+. 
+. ** Check for missing key fields
+. display "--- Missing value counts for key variables
+>  ---"
+--- Missing value counts for key variables ---
+
+. foreach v of local numeric_vars {
+  2.     capture confirm variable `v'
+  3.     if _rc == 0 {
+  4.         quietly count if missing(`v')
+  5.         display as txt "`v': `r(N)' missing"
+  6.     }
+  7. }
+agep: 0 missing
+wagp: 903 missing
+wkhp: 3023 missing
+schl: 136 missing
+pincp: 903 missing
+povpip: 388 missing
+esr: 962 missing
+cow: 2453 missing
+mar: 0 missing
+sex: 0 missing
+rac1p: 0 missing
+hisp: 0 missing
+adjinc: 0 missing
+pwgtp: 0 missing
+
+. 
+. ** Check uniqueness of serialno sporder
+. duplicates report serialno sporder
+
+Duplicates in terms of serialno sporder
+
+--------------------------------------
+   Copies | Observations       Surplus
+----------+---------------------------
+        1 |         6938             0
+--------------------------------------
+
+. isid serialno sporder
+
+. 
+. display "CONFIRMED: serialno sporder uniquely ident
+> ify observations."
+CONFIRMED: serialno sporder uniquely identify observa
+> tions.
+
+. 
+. ** Save cleaned full dataset
+. save "processed_data/ps5_cleaned_full.dta", replace
+file processed_data/ps5_cleaned_full.dta saved
+
+. display "Saved: processed_data/ps5_cleaned_full.dta
+> "
+Saved: processed_data/ps5_cleaned_full.dta
+
+. 
+. ** TASK 5: Build a sample-construction table
+. 
+. tempname sample_post
+
+. tempfile sample_steps
+
+. 
+. postfile `sample_post' str80 step int n_remaining i
+> nt n_excluded ///
+>     using "`sample_steps'", replace
+(file
+    C:\Users\citla\AppData\Local\Temp\ST_3cc4_00000
+    > 1.tmp not found)
+
+. 
+. ** --- Step 0: Starting point ---
+. count
+  6,938
+
+. local n_prev = r(N)
+
+. post `sample_post' ("Start: cleaned observations") 
+> (`n_prev') (0)
+
+. 
+. ** --- Inclusion 1: Ages 25-64 ---
+. keep if inrange(agep, 25, 64)
+(3,688 observations deleted)
+
+. count
+  3,250
+
+. local n_now = r(N)
+
+. post `sample_post' ("Inclusion: age 25 to 64") (`n_
+> now') (`n_prev' - `n_now')
+
+. local n_prev = `n_now'
+
+. 
+. ** --- Inclusion 2: wagp > 0 and wkhp >= 35 ---
+. keep if wagp > 0 & !missing(wagp) & wkhp >= 35 & !m
+> issing(wkhp)
+(1,145 observations deleted)
+
+. count
+  2,105
+
+. local n_now = r(N)
+
+. post `sample_post' ("Inclusion: wagp > 0 and wkhp >
+> = 35") (`n_now') (`n_prev' - `n_now')
+
+. local n_prev = `n_now'
+
+. 
+. ** --- Inclusion 3: esr in employed categories (1 o
+> r 2) ---
+. keep if inlist(esr, 1, 2)
+(75 observations deleted)
+
+. count
+  2,030
+
+. local n_now = r(N)
+
+. post `sample_post' ("Inclusion: esr employed (1 or 
+> 2)") (`n_now') (`n_prev' - `n_now')
+
+. local n_prev = `n_now'
+
+. 
+. ** --- Exclusion: missing key model covariates ---
+. drop if missing(agep, schl, wkhp, wagp, pincp, povp
+> ip, cow, mar, sex, rac1p, hisp)
+(1 observation deleted)
+
+. count
+  2,029
+
+. local n_now = r(N)
+
+. post `sample_post' ("Exclusion: missing key numeric
+>  covariates") (`n_now') (`n_prev' - `n_now')
+
+. local n_prev = `n_now'
+
+. 
+. ** --- Exclusion: missing encoded categorical IDs -
+> --
+. drop if missing(naicsp_id, socp_id)
+(0 observations deleted)
+
+. count
+  2,029
+
+. local n_now = r(N)
+
+. post `sample_post' ("Exclusion: missing encoded cat
+> egorical IDs") (`n_now') (`n_prev' - `n_now')
+
+. local n_prev = `n_now'
+
+. 
+. ** --- Create log wage ---
+. gen ln_wage = ln(wagp)
+
+. label var ln_wage "Log annual wage and salary incom
+> e"
+
+. 
+. ** Close postfile
+. postclose `sample_post'
+
+. 
+. ** Export sample construction table
+. preserve
+
+.     use "`sample_steps'", clear
+
+.     list
+
+     +--------------------------------------------+
+  1. |                                       step |
+     |                Start: cleaned observations |
+     |--------------------------------------------|
+     |      n_rema~g       |       n_excl~d       |
+     |          6938       |              0       |
+     +--------------------------------------------+
+
+     +--------------------------------------------+
+  2. |                                       step |
+     |                    Inclusion: age 25 to 64 |
+     |--------------------------------------------|
+     |      n_rema~g       |       n_excl~d       |
+     |          3250       |           3688       |
+     +--------------------------------------------+
+
+     +--------------------------------------------+
+  3. |                                       step |
+     |         Inclusion: wagp > 0 and wkhp >= 35 |
+     |--------------------------------------------|
+     |      n_rema~g       |       n_excl~d       |
+     |          2105       |           1145       |
+     +--------------------------------------------+
+
+     +--------------------------------------------+
+  4. |                                       step |
+     |           Inclusion: esr employed (1 or 2) |
+     |--------------------------------------------|
+     |      n_rema~g       |       n_excl~d       |
+     |          2030       |             75       |
+     +--------------------------------------------+
+
+     +--------------------------------------------+
+  5. |                                       step |
+     |  Exclusion: missing key numeric covariates |
+     |--------------------------------------------|
+     |      n_rema~g       |       n_excl~d       |
+     |          2029       |              1       |
+     +--------------------------------------------+
+
+     +--------------------------------------------+
+  6. |                                       step |
+     | Exclusion: missing encoded categorical IDs |
+     |--------------------------------------------|
+     |      n_rema~g       |       n_excl~d       |
+     |          2029       |              0       |
+     +--------------------------------------------+
+
+.     export delimited using "processed_data/ps5_samp
+> le_construction.csv", replace
+file processed_data/ps5_sample_construction.csv saved
+
+.     save "processed_data/ps5_sample_construction.dt
+> a", replace
+file processed_data/ps5_sample_construction.dta
+    saved
+
+.     display "Saved: processed_data/ps5_sample_const
+> ruction.csv"
+Saved: processed_data/ps5_sample_construction.csv
+
+. restore
+
+. 
+. **TASK 6: Use macros for model specification and lo
+> ops
+. ** --- Define covariate block locals ---
+. local outcome "ln_wage"
+
+. 
+. local covariates_demo "i.sex i.rac1p i.hisp i.mar a
+> gep"
+
+. 
+. local covariates_humancap "schl wkhp"
+
+. 
+. local covariates_labor "i.cow i.esr"
+
+. 
+. local covariates_occ "i.naicsp_id i.socp_id"
+
+. 
+. local model_covariates "`covariates_demo' `covariat
+> es_humancap' `covariates_labor' `covariates_occ'"
+
+. 
+. ** --- Display outcome and model_covariates macros 
+> in log ---
+. display "outcome macro: `outcome'"
+outcome macro: ln_wage
+
+. display "model_covariates macro: `model_covariates'
+> "
+model_covariates macro: i.sex i.rac1p i.hisp i.mar ag
+> ep schl wkhp i.cow i.esr i.naicsp_id i.socp_id
+
+. 
+. ** --- QA loop: report means and SDs for key variab
+> les ---
+. local qa_vars "ln_wage wagp wkhp schl agep"
+
+. 
+. display "--- QA: Means and Standard Deviations ---"
+--- QA: Means and Standard Deviations ---
+
+. foreach v of local qa_vars {
+  2.     quietly summarize `v'
+  3.     display as txt "`v': mean = " %8.3f r(mean) 
+> "  sd = " %8.3f r(sd) "  N = " r(N)
+  4. }
+ln_wage: mean =   11.048  sd =    0.726  N = 2029
+wagp: mean =  8.1e+04  sd =  7.7e+04  N = 2029
+wkhp: mean =   43.494  sd =    7.439  N = 2029
+schl: mean =   19.553  sd =    2.807  N = 2029
+agep: mean =   45.483  sd =   11.391  N = 2029
+
+. 
+. ** --- forvalues loop: count obs with wkhp >= cutof
+> f ---
+. display "--- WKHP cutoff counts ---"
+--- WKHP cutoff counts ---
+
+. forvalues cut = 35(5)55 {
+  2.     quietly count if wkhp >= `cut'
+  3.     display as txt "wkhp >= `cut': " r(N) " obse
+> rvations"
+  4. }
+wkhp >= 35: 2029 observations
+wkhp >= 40: 1846 observations
+wkhp >= 45: 632 observations
+wkhp >= 50: 421 observations
+wkhp >= 55: 192 observations
+
+. 
+. ** --- Run and store three regression specification
+> s ---
+. ** M1: Demographics only
+. regress `outcome' `covariates_demo'
+
+      Source |       SS           df       MS      Nu
+> mber of obs   =     2,029
+-------------+----------------------------------   F(
+> 24, 2004)     =      3.79
+       Model |  46.4281203        24  1.93450501   Pr
+> ob > F        =    0.0000
+    Residual |  1022.10088     2,004  .510030381   R-
+> squared       =    0.0435
+-------------+----------------------------------   Ad
+> j R-squared   =    0.0320
+       Total |    1068.529     2,028  .526888069   Ro
+> ot MSE        =    .71416
+
+-----------------------------------------------------
+> -------------------------
+     ln_wage | Coefficient  Std. err.      t    P>|t|
+>      [95% con                                      
+>              f. interval]
+-------------+---------------------------------------
+> -------------------------
+       2.sex |  -.1549972   .0320333    -4.84   0.000
+>     -.2178193                                      
+>                 -.0921751
+             |
+       rac1p |
+          2  |  -.0847684   .2726895    -0.31   0.756
+>     -.6195531                                      
+>                  .4500162
+          3  |   .2166647   .4380469     0.49   0.621
+>     -.6424103                                      
+>                   1.07574
+          6  |  -.0183941   .1130693    -0.16   0.871
+>     -.2401398                                      
+>                  .2033516
+          8  |  -.0494594   .2164206    -0.23   0.819
+>     -.4738924                                      
+>                  .3749736
+          9  |  -.0151881   .0829325    -0.18   0.855
+>      -.177831                                      
+>                  .1474548
+             |
+        hisp |
+          2  |  -.0908961   .2838296    -0.32   0.749
+>     -.6475281                                      
+>                  .4657359
+          3  |   .0214324   .2314662     0.09   0.926
+>     -.4325072                                      
+>                  .4753721
+          4  |  -.3035528   .4138352    -0.73   0.463
+>     -1.115145                                      
+>                  .5080394
+          5  |   .1781449   .5168461     0.34   0.730
+>     -.8354669                                      
+>                  1.191757
+          6  |   .0499813   .7152455     0.07   0.944
+>     -1.352721                                      
+>                  1.452684
+          9  |   .8717506   .4371953     1.99   0.046
+>      .0143457                                      
+>                  1.729155
+         11  |  -.1438419   .5167457    -0.28   0.781
+>     -1.157257                                      
+>                  .8695731
+         13  |   2.100049   .7191234     2.92   0.004
+>      .6897413                                      
+>                  3.510357
+         14  |   .3689579   .7302199     0.51   0.613
+>     -1.063112                                      
+>                  1.801028
+         16  |  -.0705329   .4387044    -0.16   0.872
+>     -.9308974                                      
+>                  .7898316
+         19  |  -.1958188   .7148263    -0.27   0.784
+>     -1.597699                                      
+>                  1.206062
+         23  |   .2879575   .2764415     1.04   0.298
+>     -.2541853                                      
+>                  .8301002
+         24  |   -.049723   .2819963    -0.18   0.860
+>     -.6027596                                      
+>                  .5033136
+             |
+         mar |
+          2  |  -.1227121   .1547161    -0.79   0.428
+>     -.4261333                                      
+>                  .1807092
+          3  |  -.1297981   .0491926    -2.64   0.008
+>     -.2262722                                      
+>                 -.0333241
+          4  |  -.1180204   .1299678    -0.91   0.364
+>     -.3729065                                      
+>                  .1368656
+          5  |  -.2675691   .0418098    -6.40   0.000
+>     -.3495644                                      
+>                 -.1855739
+             |
+        agep |   .0007936   .0015644     0.51   0.612
+>     -.0022744                                      
+>                  .0038616
+       _cons |   11.16856    .078711   141.89   0.000
+>      11.01419                                      
+>                  11.32292
+-----------------------------------------------------
+> -------------------------
+
+. estimates store m1
+
+. display "Stored: m1 (demographics only)"
+Stored: m1 (demographics only)
+
+. 
+. ** M2: Demographics + human capital
+. regress `outcome' `covariates_demo' `covariates_hum
+> ancap'
+
+      Source |       SS           df       MS      Nu
+> mber of obs   =     2,029
+-------------+----------------------------------   F(
+> 26, 2002)     =     12.25
+       Model |  146.678262        26  5.64147162   Pr
+> ob > F        =    0.0000
+    Residual |  921.850741     2,002  .460464906   R-
+> squared       =    0.1373
+-------------+----------------------------------   Ad
+> j R-squared   =    0.1261
+       Total |    1068.529     2,028  .526888069   Ro
+> ot MSE        =    .67858
+
+-----------------------------------------------------
+> -------------------------
+     ln_wage | Coefficient  Std. err.      t    P>|t|
+>      [95% con                                      
+>              f. interval]
+-------------+---------------------------------------
+> -------------------------
+       2.sex |  -.1941926   .0311614    -6.23   0.000
+>     -.2553047                                      
+>                 -.1330804
+             |
+       rac1p |
+          2  |  -.1274847   .2592865    -0.49   0.623
+>     -.6359844                                      
+>                  .3810149
+          3  |   .0747083   .4163402     0.18   0.858
+>     -.7417972                                      
+>                  .8912138
+          6  |   .0411232    .107529     0.38   0.702
+>     -.1697572                                      
+>                  .2520036
+          8  |  -.1578894   .2057772    -0.77   0.443
+>     -.5614492                                      
+>                  .2456704
+          9  |   .0229053   .0788503     0.29   0.771
+>      -.131732                                      
+>                  .1775426
+             |
+        hisp |
+          2  |   .2102866   .2705074     0.78   0.437
+>      -.320219                                      
+>                  .7407921
+          3  |  -.0609486   .2200548    -0.28   0.782
+>     -.4925091                                      
+>                  .3706119
+          4  |  -.4348463   .3934483    -1.11   0.269
+>     -1.206457                                      
+>                  .3367646
+          5  |   .0122195   .4912232     0.02   0.980
+>     -.9511427                                      
+>                  .9755818
+          6  |   .0035184   .6796291     0.01   0.996
+>     -1.329336                                      
+>                  1.336373
+          9  |   .8003407   .4154381     1.93   0.054
+>     -.0143955                                      
+>                  1.615077
+         11  |  -.0457678   .4910686    -0.09   0.926
+>     -1.008827                                      
+>                  .9172913
+         13  |   1.622305   .6843291     2.37   0.018
+>       .280233                                      
+>                  2.964377
+         14  |   .2285184   .6939164     0.33   0.742
+>     -1.132356                                      
+>                  1.589392
+         16  |  -.1150596     .41717    -0.28   0.783
+>     -.9331924                                      
+>                  .7030733
+         19  |  -.3426011   .6792834    -0.50   0.614
+>     -1.674777                                      
+>                  .9895753
+         23  |   .0881627   .2630462     0.34   0.738
+>     -.4277103                                      
+>                  .6040356
+         24  |  -.0461009    .267944    -0.17   0.863
+>     -.5715793                                      
+>                  .4793774
+             |
+         mar |
+          2  |  -.0721752   .1470461    -0.49   0.624
+>     -.3605547                                      
+>                  .2162043
+          3  |  -.0665359   .0469474    -1.42   0.157
+>     -.1586067                                      
+>                  .0255349
+          4  |  -.1188655    .123631    -0.96   0.336
+>     -.3613244                                      
+>                  .1235935
+          5  |  -.2211936   .0398531    -5.55   0.000
+>     -.2993515                                      
+>                 -.1430358
+             |
+        agep |   .0022143   .0014927     1.48   0.138
+>      -.000713                                      
+>                  .0051417
+        schl |   .0732685   .0055397    13.23   0.000
+>      .0624044                                      
+>                  .0841326
+        wkhp |   .0121943   .0020603     5.92   0.000
+>      .0081538                                      
+>                  .0162348
+       _cons |   9.138806   .1599465    57.14   0.000
+>      8.825127                                      
+>                  9.452485
+-----------------------------------------------------
+> -------------------------
+
+. estimates store m2
+
+. display "Stored: m2 (demographics + human capital)"
+Stored: m2 (demographics + human capital)
+
+. 
+. ** M3: Full model
+. regress `outcome' `model_covariates'
+note: 138.socp_id omitted because of collinearity.
+note: 140.socp_id omitted because of collinearity.
+note: 147.socp_id omitted because of collinearity.
+note: 162.socp_id omitted because of collinearity.
+note: 225.socp_id omitted because of collinearity.
+note: 303.socp_id omitted because of collinearity.
+note: 380.socp_id omitted because of collinearity.
+note: 389.socp_id omitted because of collinearity.
+
+      Source |       SS           df       MS      Nu
+> mber of obs   =     2,029
+-------------+----------------------------------   F(
+> 556, 1472)    =      3.19
+       Model |  584.178102       556  1.05068004   Pr
+> ob > F        =    0.0000
+    Residual |  484.350902     1,472  .329042732   R-
+> squared       =    0.5467
+-------------+----------------------------------   Ad
+> j R-squared   =    0.3755
+       Total |    1068.529     2,028  .526888069   Ro
+> ot MSE        =    .57362
+
+-----------------------------------------------------
+> -------------------------
+     ln_wage | Coefficient  Std. err.      t    P>|t|
+>      [95% con                                      
+>              f. interval]
+-------------+---------------------------------------
+> -------------------------
+       2.sex |  -.1088181   .0370397    -2.94   0.003
+>     -.1814742                                      
+>                 -.0361619
+             |
+       rac1p |
+          2  |    .156236   .3091992     0.51   0.613
+>      -.450282                                      
+>                   .762754
+          3  |   .1089056   .3925951     0.28   0.782
+>     -.6611999                                      
+>                  .8790111
+          6  |    .129641    .113609     1.14   0.254
+>     -.0932118                                      
+>                  .3524938
+          8  |   -.274871   .1877871    -1.46   0.143
+>     -.6432298                                      
+>                  .0934879
+          9  |   .0555221    .077642     0.72   0.475
+>     -.0967786                                      
+>                  .2078229
+             |
+        hisp |
+          2  |   .2887378   .2571825     1.12   0.262
+>     -.2157455                                      
+>                   .793221
+          3  |   .0105414   .2331706     0.05   0.964
+>     -.4468407                                      
+>                  .4679235
+          4  |  -.2493627   .5027586    -0.50   0.620
+>     -1.235562                                      
+>                   .736837
+          5  |  -.2967712   .4277665    -0.69   0.488
+>     -1.135868                                      
+>                  .5423257
+          6  |  -.2553639   .6884723    -0.37   0.711
+>     -1.605855                                      
+>                  1.095127
+          9  |   .3479221   .4810943     0.72   0.470
+>     -.5957814                                      
+>                  1.291626
+         11  |   .0141969   .4374771     0.03   0.974
+>     -.8439481                                      
+>                  .8723419
+         13  |   1.850026   .6094895     3.04   0.002
+>      .6544653                                      
+>                  3.045586
+         14  |   .3713756   .6485509     0.57   0.567
+>     -.9008068                                      
+>                  1.643558
+         16  |  -.1902587   .3908847    -0.49   0.627
+>      -.957009                                      
+>                  .5764917
+         19  |   .1423806   .6314514     0.23   0.822
+>      -1.09626                                      
+>                  1.381021
+         23  |   -.159579   .2492872    -0.64   0.522
+>     -.6485751                                      
+>                   .329417
+         24  |  -.1847268   .2737849    -0.67   0.500
+>      -.721777                                      
+>                  .3523234
+             |
+         mar |
+          2  |  -.0380253   .1525334    -0.25   0.803
+>     -.3372313                                      
+>                  .2611808
+          3  |  -.0627598   .0457271    -1.37   0.170
+>     -.1524571                                      
+>                  .0269375
+          4  |  -.2075667   .1283801    -1.62   0.106
+>     -.4593941                                      
+>                  .0442607
+          5  |  -.0970715   .0401756    -2.42   0.016
+>     -.1758791                                      
+>                 -.0182639
+             |
+        agep |   .0041206   .0015141     2.72   0.007
+>      .0011506                                      
+>                  .0070906
+        schl |   .0295467   .0070044     4.22   0.000
+>       .015807                                      
+>                  .0432863
+        wkhp |   .0105166   .0021595     4.87   0.000
+>      .0062806                                      
+>                  .0147526
+             |
+         cow |
+          2  |   .0581883   .0550406     1.06   0.291
+>     -.0497781                                      
+>                  .1661547
+          3  |   .1447737   .0775739     1.87   0.062
+>     -.0073934                                      
+>                  .2969408
+          4  |     .06578   .0964229     0.68   0.495
+>      -.123361                                      
+>                   .254921
+          5  |   .2736208   .1381791     1.98   0.048
+>      .0025719                                      
+>                  .5446696
+          6  |    -.78947   .1395269    -5.66   0.000
+>     -1.063163                                      
+>                 -.5157773
+          7  |  -.3249563   .0785429    -4.14   0.000
+>     -.4790244                                      
+>                 -.1708883
+          8  |  -1.565809   .2751124    -5.69   0.000
+>     -2.105463                                      
+>                 -1.026154
+             |
+       2.esr |  -.1374381   .1215156    -1.13   0.258
+>     -.3758002                                      
+>                  .1009241
+             |
+   naicsp_id |
+        112  |   .2630885   .2181313     1.21   0.228
+>     -.1647928                                      
+>                  .6909699
+       1133  |   .0050958   .7174564     0.01   0.994
+>      -1.40225                                      
+>                  1.412442
+       113M  |  -.0332796   .4127798    -0.08   0.936
+>      -.842979                                      
+>                  .7764198
+        115  |   .2703114   .4553295     0.59   0.553
+>     -.6228525                                      
+>                  1.163475
+       2123  |   .7263865   .6383396     1.14   0.255
+>     -.5257658                                      
+>                  1.978539
+      2211P  |   .4926064   .2733181     1.80   0.072
+>     -.0435282                                      
+>                  1.028741
+      2212P  |   .6214683    .640657     0.97   0.332
+>     -.6352297                                      
+>                  1.878166
+      22132  |   .0215397   .4064581     0.05   0.958
+>     -.7757591                                      
+>                  .8188385
+      2213M  |  -.3689008   .4352623    -0.85   0.397
+>     -1.222701                                      
+>                  .4848997
+         23  |   .1872369   .2507916     0.75   0.455
+>     -.3047102                                      
+>                  .6791839
+       3113  |    .307081   .6478042     0.47   0.636
+>     -.9636367                                      
+>                  1.577799
+       3114  |  -.1698044    .495669    -0.34   0.732
+>     -1.142097                                      
+>                  .8024884
+       3115  |   .2149799   .2937045     0.73   0.464
+>      -.361144                                      
+>                  .7911037
+       3116  |  -.4496604    .764731    -0.59   0.557
+>     -1.949739                                      
+>                  1.050418
+     311811  |    -.12983   .5705752    -0.23   0.820
+>     -1.249057                                      
+>                  .9893971
+      3118Z  |  -.4426744   .5117353    -0.87   0.387
+>     -1.446483                                      
+>                  .5611338
+      311M1  |    .015244   .4645116     0.03   0.974
+>     -.8959313                                      
+>                  .9264193
+      311M2  |   .6139286   .4172503     1.47   0.141
+>       -.20454                                      
+>                  1.432397
+       311S  |   .6034851   .6343564     0.95   0.342
+>     -.6408537                                      
+>                  1.847824
+       3121  |   .2251829   .3344432     0.67   0.501
+>     -.4308533                                      
+>                   .881219
+       315M  |   .0919813   .6547812     0.14   0.888
+>     -1.192422                                      
+>                  1.376385
+        31M  |  -.1138616   .6558601    -0.17   0.862
+>     -1.400382                                      
+>                  1.172659
+       3211  |   .1583464   .4807989     0.33   0.742
+>     -.7847777                                      
+>                   1.10147
+       3212  |   .0533536       .641     0.08   0.934
+>     -1.204017                                      
+>                  1.310724
+     32199M  |   .1446526   .6436582     0.22   0.822
+>     -1.117932                                      
+>                  1.407238
+     3219Zm  |  -.1034876   .3256759    -0.32   0.751
+>     -.7423259                                      
+>                  .5353507
+       3221  |   .9142278    .662582     1.38   0.168
+>     -.3854778                                      
+>                  2.213933
+       3231  |    .265964   .3797547     0.70   0.484
+>      -.478954                                      
+>                  1.010882
+       3252  |  -.4469554   .5562844    -0.80   0.422
+>      -1.53815                                      
+>                  .6442392
+       3253  |   .4596682   .4763781     0.96   0.335
+>     -.4747841                                      
+>                   1.39412
+       3254  |  -.0031141   .3389492    -0.01   0.993
+>     -.6679891                                      
+>                  .6617608
+       3256  |   .0346584   .4203459     0.08   0.934
+>     -.7898825                                      
+>                  .8591993
+       325M  |  -1.735192   .6476216    -2.68   0.007
+>     -3.005552                                      
+>                 -.4648324
+       3261  |  -.0110981   .4143733    -0.03   0.979
+>     -.8239232                                      
+>                  .8017271
+      3262M  |    .607283   .4592215     1.32   0.186
+>     -.2935153                                      
+>                  1.508081
+      32711  |   .4559061   .6374177     0.72   0.475
+>     -.7944378                                      
+>                   1.70625
+      32712  |  -.0461712   .6720238    -0.07   0.945
+>     -1.364398                                      
+>                  1.272055
+       3272  |    .235871   .5204459     0.45   0.650
+>     -.7850236                                      
+>                  1.256766
+       3279  |   .2655869   .3718682     0.71   0.475
+>     -.4638612                                      
+>                  .9950351
+       3313  |   2.047669   .6226829     3.29   0.001
+>      .8262285                                      
+>                  3.269109
+       3314  |  -.6711355     .62516    -1.07   0.283
+>     -1.897435                                      
+>                   .555164
+       3315  |   .2746222   .6269737     0.44   0.661
+>      -.955235                                      
+>                  1.504479
+       3321  |   .5576538   .5284275     1.06   0.291
+>     -.4788974                                      
+>                  1.594205
+       3322  |  -.4401056   .6613668    -0.67   0.506
+>     -1.737427                                      
+>                  .8572163
+       3327  |   .6641793   .3855965     1.72   0.085
+>      -.092198                                      
+>                  1.420557
+       332M  |  -.1787569   .7126785    -0.25   0.802
+>     -1.576731                                      
+>                  1.219217
+      332Mz  |  -.0890913   .3610409    -0.25   0.805
+>     -.7973008                                      
+>                  .6191183
+       3333  |   .8451539   .6469115     1.31   0.192
+>     -.4238128                                      
+>                  2.114121
+       3335  |   .2906885   .6089395     0.48   0.633
+>     -.9037932                                      
+>                   1.48517
+      333Ms  |   .1053797   .3305114     0.32   0.750
+>     -.5429438                                      
+>                  .7537032
+       3341  |    .516758   .6730768     0.77   0.443
+>     -.8035338                                      
+>                   1.83705
+       3345  |   .7704533   .4114671     1.87   0.061
+>      -.036671                                      
+>                  1.577578
+      334M2  |   .4379704   .2879994     1.52   0.129
+>     -.1269625                                      
+>                  1.002903
+       3352  |  -.4211513   .6704498    -0.63   0.530
+>      -1.73629                                      
+>                  .8939876
+       335M  |   .2474985    .303748     0.81   0.415
+>     -.3483266                                      
+>                  .8433236
+    33641M1  |   .4764595   .2764773     1.72   0.085
+>     -.0658719                                      
+>                  1.018791
+       336M  |   .5940761   .3610236     1.65   0.100
+>     -.1140995                                      
+>                  1.302252
+        337  |  -.0167256     .35033    -0.05   0.962
+>     -.7039249                                      
+>                  .6704737
+       3391  |    .284012   .2790301     1.02   0.309
+>     -.2633271                                      
+>                  .8313511
+      3399M  |   .5141123    .450478     1.14   0.254
+>     -.3695349                                      
+>                   1.39776
+     3399Zm  |   .4802332   .2839916     1.69   0.091
+>     -.0768382                                      
+>                  1.037305
+        3Ms  |  -.0101404    .339758    -0.03   0.976
+>     -.6766019                                      
+>                  .6563211
+       4231  |  -.0966472   .3159511    -0.31   0.760
+>     -.7164096                                      
+>                  .5231153
+       4234  |   .7206585    .631428     1.14   0.254
+>     -.5179361                                      
+>                  1.959253
+       4236  |   .2066793   .4788239     0.43   0.666
+>     -.7325707                                      
+>                  1.145929
+       4237  |   .6827052   .4208336     1.62   0.105
+>     -.1427923                                      
+>                  1.508203
+       4238  |   .6337557    .480076     1.32   0.187
+>     -.3079502                                      
+>                  1.575462
+      42393  |  -.8440524   .6389213    -1.32   0.187
+>     -2.097346                                      
+>                  .4092409
+      4239Z  |   .0106496   .4997582     0.02   0.983
+>     -.9696646                                      
+>                  .9909637
+       4243  |  -.2165609   .4268168    -0.51   0.612
+>     -1.053795                                      
+>                   .620673
+       4244  |   .2490016    .346967     0.72   0.473
+>     -.4316009                                      
+>                  .9296041
+       4245  |   -.418006   .4753593    -0.88   0.379
+>      -1.35046                                      
+>                  .5144477
+       4247  |   .4405234   .6407276     0.69   0.492
+>     -.8163131                                      
+>                   1.69736
+      4249Z  |    .052972   .6416894     0.08   0.934
+>     -1.205751                                      
+>                  1.311695
+       424M  |   2.219409   .6525948     3.40   0.001
+>      .9392943                                      
+>                  3.499524
+        42S  |    .158343   .7466174     0.21   0.832
+>     -1.306204                                      
+>                   1.62289
+       4411  |  -.2849144   .2651432    -1.07   0.283
+>      -.805013                                      
+>                  .2351843
+       4412  |   .4086077   .4130207     0.99   0.323
+>     -.4015642                                      
+>                   1.21878
+       4413  |  -.5850186   .3690962    -1.59   0.113
+>     -1.309029                                      
+>                  .1389919
+      44414  |  -.0194188   .3691374    -0.05   0.958
+>     -.7435102                                      
+>                  .7046726
+      4441Z  |   .0336959   .2713221     0.12   0.901
+>     -.4985234                                      
+>                  .5659151
+       4442  |   -.155812   .3752549    -0.42   0.678
+>     -.8919034                                      
+>                  .5802795
+      44511  |  -.2093345   .2562212    -0.82   0.414
+>     -.7119319                                      
+>                   .293263
+      44513  |  -.1068272   .3790822    -0.28   0.778
+>     -.8504261                                      
+>                  .6367716
+       4452  |  -.2340394   .4180212    -0.56   0.576
+>      -1.05402                                      
+>                  .5859413
+       4453  |  -.3642802   .6265857    -0.58   0.561
+>     -1.593376                                      
+>                  .8648158
+       4491  |   .0642694   .3633934     0.18   0.860
+>     -.6485548                                      
+>                  .7770936
+       4492  |   .3498059   .3260935     1.07   0.284
+>     -.2898516                                      
+>                  .9894634
+       4551  |  -.5886429   .6313466    -0.93   0.351
+>     -1.827078                                      
+>                   .649792
+       4552  |  -.0598928   .2703833    -0.22   0.825
+>     -.5902704                                      
+>                  .4704849
+      45611  |   -.023822   .2999324    -0.08   0.937
+>     -.6121624                                      
+>                  .5645185
+      4561Z  |   .3194451   .3575029     0.89   0.372
+>     -.3818244                                      
+>                  1.020715
+       4571  |  -.7604206   .4731556    -1.61   0.108
+>     -1.688552                                      
+>                  .1677105
+       4572  |  -.0176978   .3586426    -0.05   0.961
+>     -.7212028                                      
+>                  .6858071
+       4581  |  -.8135636   .3483291    -2.34   0.020
+>     -1.496838                                      
+>                 -.1302892
+      4591M  |  -.2281389   .2965339    -0.77   0.442
+>     -.8098129                                      
+>                  .3535352
+      45921  |  -.5348387   .6284948    -0.85   0.395
+>      -1.76768                                      
+>                  .6980022
+      45942  |  -.4553813   .3724249    -1.22   0.222
+>     -1.185921                                      
+>                  .2751587
+       4595  |  -.8615218   .6613451    -1.30   0.193
+>     -2.158801                                      
+>                  .4357575
+       4599  |  -.1050712   .2945262    -0.36   0.721
+>      -.682807                                      
+>                  .4726645
+        481  |   1.316342   .4923657     2.67   0.008
+>      .3505288                                      
+>                  2.282155
+        482  |   .7732949   .8151669     0.95   0.343
+>     -.8257176                                      
+>                  2.372307
+        483  |   .1200175   .6403273     0.19   0.851
+>     -1.136034                                      
+>                  1.376069
+        484  |   .2215113   .2871441     0.77   0.441
+>     -.3417439                                      
+>                  .7847665
+       485M  |  -.1332187    .630653    -0.21   0.833
+>     -1.370293                                      
+>                  1.103856
+        486  |   .1016894   .6257736     0.16   0.871
+>     -1.125814                                      
+>                  1.329192
+        488  |   .1349702   .3282761     0.41   0.681
+>     -.5089686                                      
+>                  .7789089
+        491  |  -.1897465   .4347992    -0.44   0.663
+>     -1.042639                                      
+>                  .6631457
+        492  |   .3627647   .4053279     0.89   0.371
+>     -.4323172                                      
+>                  1.157847
+        493  |   .7717973   .6554061     1.18   0.239
+>     -.5138322                                      
+>                  2.057427
+        4Ms  |  -1.160192   .3511881    -3.30   0.001
+>     -1.849074                                      
+>                 -.4713091
+       5121  |   .3809097   .4919063     0.77   0.439
+>     -.5840023                                      
+>                  1.345822
+      51311  |  -.2662422   .4916563    -0.54   0.588
+>     -1.230664                                      
+>                  .6981794
+      5131Z  |  -.0656025   .6373636    -0.10   0.918
+>      -1.31584                                      
+>                  1.184635
+       5132  |   .3701333   .6680972     0.55   0.580
+>     -.9403908                                      
+>                  1.680657
+        516  |  -.1001721    .432031    -0.23   0.817
+>     -.9476342                                      
+>                    .74729
+     517111  |    .571846   .4396208     1.30   0.194
+>      -.290504                                      
+>                  1.434196
+       517Z  |   .5703486   .4503317     1.27   0.206
+>     -.3130116                                      
+>                  1.453709
+       5182  |   .0322652   .5005625     0.06   0.949
+>     -.9496266                                      
+>                  1.014157
+      51921  |  -.5371562    .688376    -0.78   0.435
+>     -1.887459                                      
+>                  .8131463
+      5221M  |  -.3186568   .3220925    -0.99   0.323
+>      -.950466                                      
+>                  .3131523
+       522M  |   .6646005   .3541964     1.88   0.061
+>      -.030183                                      
+>                  1.359384
+       5241  |   .2479557   .3042446     0.81   0.415
+>     -.3488435                                      
+>                   .844755
+       5242  |   .3139438   .3211182     0.98   0.328
+>     -.3159542                                      
+>                  .9438419
+       52M2  |   .6484077   .2986262     2.17   0.030
+>      .0626295                                      
+>                  1.234186
+       52M3  |   .0431137    .298843     0.14   0.885
+>     -.5430899                                      
+>                  .6293173
+       5313  |  -.1641202   .4253002    -0.39   0.700
+>     -.9983793                                      
+>                  .6701388
+       531M  |   .1425884   .2954239     0.48   0.629
+>     -.4369084                                      
+>                  .7220851
+        53M  |  -.8326739    .662373    -1.26   0.209
+>     -2.131969                                      
+>                  .4666217
+       5411  |   .0509287   .2999101     0.17   0.865
+>     -.5373681                                      
+>                  .6392254
+       5412  |   -.018907   .2939717    -0.06   0.949
+>     -.5955551                                      
+>                  .5577411
+       5413  |    .170021   .2707803     0.63   0.530
+>     -.3611353                                      
+>                  .7011772
+       5414  |   .2766562   .6425911     0.43   0.667
+>     -.9838357                                      
+>                  1.537148
+       5415  |   .2931715    .247728     1.18   0.237
+>     -.1927659                                      
+>                   .779109
+       5416  |   .3152462   .2641304     1.19   0.233
+>     -.2028659                                      
+>                  .8333582
+       5417  |   .1140197   .3379411     0.34   0.736
+>     -.5488778                                      
+>                  .7769172
+       5418  |   .2748177   .3809575     0.72   0.471
+>     -.4724598                                      
+>                  1.022095
+      54194  |  -.3687824   .4232563    -0.87   0.384
+>     -1.199032                                      
+>                  .4614673
+      5419Z  |   .2944357   .4822808     0.61   0.542
+>     -.6515952                                      
+>                  1.240467
+         55  |   .5020487   .3894523     1.29   0.198
+>     -.2618919                                      
+>                  1.265989
+       5613  |   .3264107   .3492108     0.93   0.350
+>     -.3585932                                      
+>                  1.011415
+       5614  |  -.6170203   .3834542    -1.61   0.108
+>     -1.369195                                      
+>                  .1351546
+       5615  |  -.0505928   .4575626    -0.11   0.912
+>     -.9481369                                      
+>                  .8469514
+       5616  |    .160542   .4794819     0.33   0.738
+>     -.7799985                                      
+>                  1.101083
+      56173  |  -.7550577   .4526857    -1.67   0.096
+>     -1.643035                                      
+>                    .13292
+      5617Z  |    .143227   .3134245     0.46   0.648
+>     -.4715793                                      
+>                  .7580333
+       561M  |  -.1283617    .452301    -0.28   0.777
+>     -1.015585                                      
+>                  .7588615
+        562  |   .1534503   .2883408     0.53   0.595
+>     -.4121524                                      
+>                  .7190531
+       6111  |  -.3129997    .247513    -1.26   0.206
+>     -.7985155                                      
+>                  .1725162
+      611M1  |  -.0267785   .2484762    -0.11   0.914
+>     -.5141836                                      
+>                  .4606267
+      611M2  |  -.1601412   .4814457    -0.33   0.739
+>     -1.104534                                      
+>                  .7842515
+      611M3  |  -.1476978   .3363317    -0.44   0.661
+>     -.8074382                                      
+>                  .5120426
+       6211  |   .1638874    .288589     0.57   0.570
+>      -.402202                                      
+>                  .7299768
+       6212  |   .4928894    .934001     0.53   0.598
+>     -1.339225                                      
+>                  2.325004
+      62132  |   -.010989   .4781805    -0.02   0.982
+>     -.9489769                                      
+>                  .9269988
+     6213Zm  |  -.0182512   .5243519    -0.03   0.972
+>     -1.046808                                      
+>                  1.010305
+       6214  |   .0416489   .2633412     0.16   0.874
+>     -.4749151                                      
+>                   .558213
+       6216  |    .588082   .3166889     1.86   0.064
+>     -.0331276                                      
+>                  1.209292
+       621M  |   .3450485   .2901021     1.19   0.234
+>     -.2240091                                      
+>                  .9141061
+       6222  |  -.2112185   .8666288    -0.24   0.807
+>     -1.911177                                      
+>                   1.48874
+       622M  |   .0363622   .2437681     0.15   0.881
+>     -.4418076                                      
+>                   .514532
+       6231  |  -.0246778    .292122    -0.08   0.933
+>     -.5976975                                      
+>                   .548342
+       623M  |  -.0738627   .2774079    -0.27   0.790
+>     -.6180197                                      
+>                  .4702942
+       6241  |   .1183232   .2702956     0.44   0.662
+>     -.4118825                                      
+>                  .6485289
+       6242  |  -.0449531   .3033897    -0.15   0.882
+>     -.6400752                                      
+>                  .5501691
+       6243  |   .1184517   .4950612     0.24   0.811
+>     -.8526489                                      
+>                  1.089552
+       6244  |  -.5090297   .3523422    -1.44   0.149
+>     -1.200176                                      
+>                  .1821165
+       7111  |  -.7734498   .5272419    -1.47   0.143
+>     -1.807675                                      
+>                  .2607756
+       7115  |  -.3634646   .4859582    -0.75   0.455
+>     -1.316709                                      
+>                  .5897797
+       711M  |  -.7930234   .5569519    -1.42   0.155
+>     -1.885527                                      
+>                  .2994805
+        712  |   -.216826   .3995384    -0.54   0.587
+>     -1.000551                                      
+>                  .5668994
+       713Z  |  -.0277014   .2545446    -0.11   0.913
+>     -.5270102                                      
+>                  .4716074
+       7211  |   .0849716   .2804627     0.30   0.762
+>     -.4651776                                      
+>                  .6351208
+       721M  |   .2092511   .6455853     0.32   0.746
+>     -1.057114                                      
+>                  1.475616
+       722Z  |  -.0165487   .2689446    -0.06   0.951
+>     -.5441041                                      
+>                  .5110067
+     811192  |   .9319613   .7629903     1.22   0.222
+>     -.5647029                                      
+>                  2.428625
+      8111Z  |  -.3151706   .3136719    -1.00   0.315
+>     -.9304622                                      
+>                  .3001211
+       8112  |   .1071538   .6229459     0.17   0.863
+>     -1.114803                                      
+>                   1.32911
+       8113  |   .7292056   .7049529     1.03   0.301
+>     -.6536137                                      
+>                  2.112025
+       8114  |   1.002351   .8465927     1.18   0.237
+>     -.6583057                                      
+>                  2.663008
+     812112  |   .0590867   .4927637     0.12   0.905
+>     -.9075071                                      
+>                   1.02568
+      8121M  |  -.5095427    .641318    -0.79   0.427
+>     -1.767537                                      
+>                   .748452
+       8122  |  -.2162157   .4771212    -0.45   0.650
+>     -1.152126                                      
+>                  .7196942
+       8129  |   1.523628   .4652056     3.28   0.001
+>      .6110912                                      
+>                  2.436164
+       8131  |   .6106487     .63707     0.96   0.338
+>     -.6390132                                      
+>                  1.860311
+      8139Z  |  -.6876334   .4769325    -1.44   0.150
+>     -1.623173                                      
+>                  .2479064
+       813M  |  -.0301092   .2702088    -0.11   0.911
+>     -.5601445                                      
+>                  .4999261
+        814  |  -2.989943   .7933137    -3.77   0.000
+>     -4.546089                                      
+>                 -1.433797
+      92113  |  -.5779062   .6432841    -0.90   0.369
+>     -1.839757                                      
+>                  .6839451
+      92119  |   .4828607   .5143142     0.94   0.348
+>      -.526006                                      
+>                  1.491727
+     9211Mp  |  -.0250436   .2735598    -0.09   0.927
+>     -.5616521                                      
+>                  .5115649
+        923  |   .0732095    .274981     0.27   0.790
+>     -.4661868                                      
+>                  .6126059
+      9281P  |  -.0824015   .3049818    -0.27   0.787
+>     -.6806467                                      
+>                  .5158438
+       92M1  |  -.2305581   .3485557    -0.66   0.508
+>      -.914277                                      
+>                  .4531607
+       92M2  |  -.2932166   .2961348    -0.99   0.322
+>     -.8741078                                      
+>                  .2876746
+       92Mp  |   .1087287   .3116016     0.35   0.727
+>     -.5025017                                      
+>                  .7199591
+             |
+     socp_id |
+     1110Xx  |   .9184735   .1961372     4.68   0.000
+>      .5337352                                      
+>                  1.303212
+     112011  |   .0857264   .6731366     0.13   0.899
+>     -1.234683                                      
+>                  1.406136
+     112021  |   .3325659   .2803463     1.19   0.236
+>     -.2173548                                      
+>                  .8824867
+     112022  |   .7618333   .3292467     2.31   0.021
+>      .1159906                                      
+>                  1.407676
+     112030  |   .0774464   .3909762     0.20   0.843
+>     -.6894835                                      
+>                  .8443763
+     113012  |   .3291988   .4000966     0.82   0.411
+>     -.4556213                                      
+>                  1.114019
+     113013  |    .345529   .3747869     0.92   0.357
+>     -.3896444                                      
+>                  1.080702
+     113021  |   .5058983   .2717948     1.86   0.063
+>     -.0272482                                      
+>                  1.039045
+     113031  |   .2864527   .2355229     1.22   0.224
+>     -.1755436                                      
+>                   .748449
+     113051  |   -.123007    .285328    -0.43   0.666
+>     -.6826997                                      
+>                  .4366858
+     113061  |    .206416   .7333103     0.28   0.778
+>     -1.232029                                      
+>                  1.644861
+     113071  |   .0912029   .2621046     0.35   0.728
+>     -.4229354                                      
+>                  .6053412
+     113121  |   .4076507   .3173956     1.28   0.199
+>     -.2149451                                      
+>                  1.030247
+     119013  |  -.0864467   .3229292    -0.27   0.789
+>     -.7198971                                      
+>                  .5470037
+     119021  |   .0902678   .2392825     0.38   0.706
+>     -.3791033                                      
+>                  .5596388
+     119030  |   .4554863   .2105794     2.16   0.031
+>      .0424185                                      
+>                   .868554
+     119041  |   1.073439   .3020375     3.55   0.000
+>      .4809696                                      
+>                  1.665909
+     119051  |  -.2367836   .2471866    -0.96   0.338
+>     -.7216592                                      
+>                   .248092
+     119070  |   .4231349   .3804393     1.11   0.266
+>      -.323126                                      
+>                  1.169396
+     119081  |     .09173   .4069478     0.23   0.822
+>     -.7065294                                      
+>                  .8899894
+     119111  |   .2401948   .2315661     1.04   0.300
+>     -.2140398                                      
+>                  .6944294
+     119141  |   .0196481   .3115988     0.06   0.950
+>      -.591577                                      
+>                  .6308731
+     119151  |   .2275356   .2356735     0.97   0.334
+>     -.2347562                                      
+>                  .6898274
+     119161  |   .3074886   .6052686     0.51   0.612
+>     -.8797924                                      
+>                   1.49477
+     1191Xx  |   .1682864   .1826163     0.92   0.357
+>     -.1899296                                      
+>                  .5265024
+     131022  |   .2861471    .379967     0.75   0.452
+>     -.4591874                                      
+>                  1.031482
+     131023  |  -.2488816   .3158857    -0.79   0.431
+>     -.8685157                                      
+>                  .3707526
+     131030  |   .0420311   .3311967     0.13   0.899
+>     -.6076367                                      
+>                  .6916989
+     131041  |   .0489921   .2853384     0.17   0.864
+>     -.5107212                                      
+>                  .6087053
+     131051  |   .5973336   .3969276     1.50   0.133
+>     -.1812704                                      
+>                  1.375938
+     131070  |  -.0959846   .2464291    -0.39   0.697
+>     -.5793742                                      
+>                  .3874049
+     131081  |  -.3351704   .4622087    -0.73   0.468
+>     -1.241828                                      
+>                  .5714875
+     131082  |   .1367705   .2190293     0.62   0.532
+>     -.2928723                                      
+>                  .5664133
+     131111  |   .4928968   .3030107     1.63   0.104
+>     -.1014819                                      
+>                  1.087276
+     131131  |   .9299594   .6049887     1.54   0.124
+>     -.2567725                                      
+>                  2.116691
+     131141  |   .1800406   .6512348     0.28   0.782
+>     -1.097407                                      
+>                  1.457488
+     131151  |  -.0039587   .3884923    -0.01   0.992
+>     -.7660162                                      
+>                  .7580988
+     131161  |   .4339209   .4478375     0.97   0.333
+>     -.4445468                                      
+>                  1.312389
+     131199  |   .0738397   .2432238     0.30   0.761
+>     -.4032624                                      
+>                  .5509418
+     132011  |   .7165316   .2402517     2.98   0.003
+>      .2452594                                      
+>                  1.187804
+     132051  |   .2497929   .2763561     0.90   0.366
+>     -.2923008                                      
+>                  .7918866
+     132052  |   1.123884   .2843156     3.95   0.000
+>       .566177                                      
+>                  1.681591
+     132070  |  -.8974229   .3330218    -2.69   0.007
+>     -1.550671                                      
+>                  -.244175
+     132081  |   .9414608   .8573898     1.10   0.272
+>     -.7403752                                      
+>                  2.623297
+     132082  |   .8575691   .6304391     1.36   0.174
+>     -.3790856                                      
+>                  2.094224
+     151211  |   .3204421   .3494681     0.92   0.359
+>     -.3650665                                      
+>                  1.005951
+     151212  |   .0019266   .6135276     0.00   0.997
+>     -1.201555                                      
+>                  1.205408
+     151230  |   .0186221   .3026634     0.06   0.951
+>     -.5750754                                      
+>                  .6123197
+     151241  |   .2635459   .4162166     0.63   0.527
+>     -.5528949                                      
+>                  1.079987
+     151244  |   .2113778   .3027897     0.70   0.485
+>     -.3825674                                      
+>                  .8053231
+     15124X  |   .1593945   .7443318     0.21   0.830
+>      -1.30067                                      
+>                  1.619459
+     151251  |    .484285   .3492437     1.39   0.166
+>     -.2007834                                      
+>                  1.169353
+     151252  |   .3577548   .2096212     1.71   0.088
+>     -.0534333                                      
+>                  .7689428
+     151254  |   .3978774   .4713296     0.84   0.399
+>     -.5266717                                      
+>                  1.322427
+     151255  |    .945619   .3792701     2.49   0.013
+>      .2016516                                      
+>                  1.689586
+     151299  |  -.0097514   .2183739    -0.04   0.964
+>     -.4381086                                      
+>                  .4186059
+     152031  |   .6392787   .4027415     1.59   0.113
+>     -.1507297                                      
+>                  1.429287
+     1520Xx  |    .294269   .3171206     0.93   0.354
+>     -.3277874                                      
+>                  .9163254
+     171011  |   .2431637   .3517543     0.69   0.489
+>     -.4468294                                      
+>                  .9331569
+     171012  |     .13125   .3669398     0.36   0.721
+>     -.5885307                                      
+>                  .8510307
+     172011  |   .1887961   .6192184     0.30   0.760
+>     -1.025848                                      
+>                  1.403441
+     172041  |   .4368922   .5583986     0.78   0.434
+>     -.6584496                                      
+>                  1.532234
+     172051  |   .1774443   .3423259     0.52   0.604
+>     -.4940543                                      
+>                   .848943
+     172070  |   .6232654   .3128919     1.99   0.047
+>       .009504                                      
+>                  1.237027
+     172081  |   .6989796   .3903192     1.79   0.074
+>     -.0666615                                      
+>                  1.464621
+     172110  |   .2185506   .3101022     0.70   0.481
+>     -.3897388                                      
+>                  .8268399
+     172131  |  -.4926852   .6653383    -0.74   0.459
+>     -1.797797                                      
+>                  .8124271
+     172141  |   .3442832   .4590385     0.75   0.453
+>     -.5561562                                      
+>                  1.244723
+     1721Yy  |   .1858287   .2406227     0.77   0.440
+>     -.2861712                                      
+>                  .6578286
+     17301X  |  -.1035282   .4861085    -0.21   0.831
+>     -1.057067                                      
+>                   .850011
+     173023  |  -.4559634   .6247744    -0.73   0.466
+>     -1.681506                                      
+>                  .7695796
+     17302X  |  -.1159547   .3218619    -0.36   0.719
+>     -.7473115                                      
+>                  .5154022
+     173031  |  -.3814643   .7296184    -0.52   0.601
+>     -1.812667                                      
+>                  1.049738
+     191020  |   .1903864   .2835885     0.67   0.502
+>     -.3658941                                      
+>                   .746667
+     191030  |  -.1168891   .4702001    -0.25   0.804
+>     -1.039223                                      
+>                  .8054445
+     1910Xx  |   .3341283   .6121938     0.55   0.585
+>      -.866737                                      
+>                  1.534994
+     192010  |   1.097563   .4493602     2.44   0.015
+>      .2161085                                      
+>                  1.979018
+     192030  |   .3515984   .4714171     0.75   0.456
+>     -.5731225                                      
+>                  1.276319
+     192041  |   .4104907   .4618793     0.89   0.374
+>     -.4955211                                      
+>                  1.316502
+     192099  |   -.068862    .312508    -0.22   0.826
+>     -.6818705                                      
+>                  .5441465
+     193034  |   .1422801   .4458204     0.32   0.750
+>     -.7322309                                      
+>                  1.016791
+     19303X  |   .2841532   .4941618     0.58   0.565
+>     -.6851832                                      
+>                   1.25349
+     193051  |   .0951832   .6555343     0.15   0.885
+>     -1.190698                                      
+>                  1.381064
+     194010  |   -.739544   .4688483    -1.58   0.115
+>     -1.659226                                      
+>                  .1801379
+     1940Yy  |  -.6258482   .3944377    -1.59   0.113
+>     -1.399568                                      
+>                  .1478716
+     195010  |   .1596345   .6590213     0.24   0.809
+>     -1.133086                                      
+>                  1.452355
+     211011  |  -.2242427   .3150948    -0.71   0.477
+>     -.8423254                                      
+>                    .39384
+     211012  |    .138219   .2546687     0.54   0.587
+>     -.3613333                                      
+>                  .6377713
+     211013  |  -.3672595    .460067    -0.80   0.425
+>     -1.269716                                      
+>                  .5351974
+     211014  |    .100154   .2853326     0.35   0.726
+>     -.4595478                                      
+>                  .6598557
+     211015  |  -.2125247   .6134807    -0.35   0.729
+>     -1.415914                                      
+>                   .990865
+     211019  |  -.1215954   .3903567    -0.31   0.755
+>     -.8873101                                      
+>                  .6441192
+     211021  |  -.2654144    .613273    -0.43   0.665
+>     -1.468397                                      
+>                  .9375678
+     211022  |  -.3016732   .6374095    -0.47   0.636
+>     -1.552001                                      
+>                  .9486545
+     211029  |   -.075635   .2484506    -0.30   0.761
+>     -.5629899                                      
+>                  .4117199
+     211092  |   .3359865   .6344021     0.53   0.596
+>      -.908442                                      
+>                  1.580415
+     211093  |   .1069255   .2860049     0.37   0.709
+>     -.4540951                                      
+>                  .6679462
+     212011  |  -1.058547   .6581517    -1.61   0.108
+>     -2.349562                                      
+>                   .232468
+     2310Xx  |   .1293858   .2719025     0.48   0.634
+>      -.403972                                      
+>                  .6627435
+     232011  |  -.0848956   .2810405    -0.30   0.763
+>     -.6361782                                      
+>                   .466387
+     251000  |   .1793805   .2280665     0.79   0.432
+>     -.2679895                                      
+>                  .6267506
+     252010  |    .037493   .2882657     0.13   0.897
+>     -.5279624                                      
+>                  .6029484
+     252020  |    .134242   .1968674     0.68   0.495
+>     -.2519286                                      
+>                  .5204125
+     252030  |   .2893883   .2058462     1.41   0.160
+>     -.1143949                                      
+>                  .6931715
+     252050  |   .2616003   .2428653     1.08   0.282
+>     -.2147986                                      
+>                  .7379992
+     2530Xx  |   .1681493   .3812062     0.44   0.659
+>     -.5796161                                      
+>                  .9159146
+     254010  |   .0875179   .3718748     0.24   0.814
+>     -.6419431                                      
+>                  .8169789
+     254022  |   .3433691   .3397513     1.01   0.312
+>     -.3230792                                      
+>                  1.009817
+     259040  |  -.4788245   .2223074    -2.15   0.031
+>     -.9148976                                      
+>                 -.0427514
+     2590Xx  |   -.368917   .3146963    -1.17   0.241
+>     -.9862181                                      
+>                   .248384
+     271010  |   1.608638   .7479973     2.15   0.032
+>      .1413834                                      
+>                  3.075892
+     271024  |   .2259081   .3139246     0.72   0.472
+>     -.3898791                                      
+>                  .8416954
+     27102X  |   .1596477   .3078495     0.52   0.604
+>     -.4442228                                      
+>                  .7635182
+     272012  |   .0962519   .4715095     0.20   0.838
+>     -.8286502                                      
+>                  1.021154
+     272022  |  -.2937827   .4025129    -0.73   0.466
+>     -1.083343                                      
+>                  .4957773
+     272042  |   .8009449   .5022547     1.59   0.111
+>     -.1842663                                      
+>                  1.786156
+     273023  |          0  (omitted)
+     273031  |  -.1223359   .3773472    -0.32   0.746
+>     -.8625315                                      
+>                  .6178597
+     273041  |          0  (omitted)
+     273042  |  -.0701434   .6326054    -0.11   0.912
+>     -1.311048                                      
+>                  1.170761
+     273043  |     .17963   .4900981     0.37   0.714
+>     -.7817352                                      
+>                  1.140995
+     273091  |   .2120466   .6044771     0.35   0.726
+>     -.9736817                                      
+>                  1.397775
+     273099  |   .1809631   .5072312     0.36   0.721
+>     -.8140099                                      
+>                  1.175936
+     274021  |  -1.038726    .647379    -1.60   0.109
+>      -2.30861                                      
+>                  .2311575
+     274030  |   1.119012   .7073705     1.58   0.114
+>     -.2685493                                      
+>                  2.506574
+     2740Xx  |          0  (omitted)
+     291020  |  -1.141694   1.009574    -1.13   0.258
+>     -3.122052                                      
+>                  .8386637
+     291031  |   .1926822   .6047399     0.32   0.750
+>     -.9935617                                      
+>                  1.378926
+     291051  |   .3334093   .3982241     0.84   0.403
+>     -.4477378                                      
+>                  1.114556
+     291071  |   .6297481   .2550747     2.47   0.014
+>      .1293994                                      
+>                  1.130097
+     291081  |  -.1254568   .6025543    -0.21   0.835
+>     -1.307413                                      
+>                    1.0565
+     291122  |   .1238817   .6033941     0.21   0.837
+>     -1.059722                                      
+>                  1.307486
+     291123  |  -.0143032   .3826027    -0.04   0.970
+>     -.7648078                                      
+>                  .7362014
+     291126  |   .0643691   .3806196     0.17   0.866
+>     -.6822456                                      
+>                  .8109837
+     291127  |   .0601939    .379669     0.16   0.874
+>     -.6845562                                      
+>                  .8049439
+     29112X  |  -.0662134   .4464644    -0.15   0.882
+>     -.9419877                                      
+>                  .8095608
+     291131  |    .966453   .4181684     2.31   0.021
+>      .1461835                                      
+>                  1.786723
+     291141  |   .3528398   .1943233     1.82   0.070
+>     -.0283404                                      
+>                  .7340199
+     2911Xx  |   .1652445   .2644348     0.62   0.532
+>     -.3534648                                      
+>                  .6839537
+     291210  |   .9035688   .2337627     3.87   0.000
+>      .4450253                                      
+>                  1.362112
+     291240  |          0  (omitted)
+     291291  |  -4.134722   .7614817    -5.43   0.000
+>     -5.628427                                      
+>                 -2.641017
+     291292  |  -.3916475   .9433764    -0.42   0.678
+>     -2.242153                                      
+>                  1.458858
+     291299  |   .5128846   .6183648     0.83   0.407
+>     -.7000855                                      
+>                  1.725855
+     292010  |   .2346401   .3416499     0.69   0.492
+>     -.4355325                                      
+>                  .9048126
+     292032  |   .2551833   .4479666     0.57   0.569
+>     -.6235377                                      
+>                  1.133904
+     292034  |   .5382342    .341804     1.57   0.116
+>     -.1322407                                      
+>                  1.208709
+     292035  |   .3640952   .6047125     0.60   0.547
+>     -.8220948                                      
+>                  1.550285
+     29203X  |   2.448684   .6292112     3.89   0.000
+>      1.214438                                      
+>                   3.68293
+     292042  |  -.2729367   .4521513    -0.60   0.546
+>     -1.159866                                      
+>                  .6139928
+     292043  |  -.5227377   .6256577    -0.84   0.404
+>     -1.750013                                      
+>                  .7045381
+     292052  |  -.1971016   .3906254    -0.50   0.614
+>     -.9633434                                      
+>                  .5691401
+     292053  |  -.2355495   .4519615    -0.52   0.602
+>     -1.122107                                      
+>                  .6510076
+     292056  |   .5675022   .4501707     1.26   0.208
+>     -.3155423                                      
+>                  1.450547
+     292061  |   .2844819   .3919637     0.73   0.468
+>     -.4843851                                      
+>                  1.053349
+     292072  |  -.1545486   .3074724    -0.50   0.615
+>     -.7576793                                      
+>                   .448582
+     292090  |   -1.10257   .6059736    -1.82   0.069
+>     -2.291234                                      
+>                  .0860938
+     299000  |   .0095043   .4502171     0.02   0.983
+>     -.8736312                                      
+>                  .8926398
+     311121  |  -.8681413   .4302737    -2.02   0.044
+>     -1.712156                                      
+>                 -.0241263
+     311122  |  -.8998406   .2481108    -3.63   0.000
+>     -1.386529                                      
+>                 -.4131521
+     311131  |   -.306114    .237127    -1.29   0.197
+>     -.7712569                                      
+>                  .1590289
+     319011  |   .4031944   .7449858     0.54   0.588
+>     -1.058152                                      
+>                  1.864541
+     319091  |  -.5157666   .9659469    -0.53   0.593
+>     -2.410546                                      
+>                  1.379012
+     319097  |  -.3069171   .4492509    -0.68   0.495
+>     -1.188157                                      
+>                   .574323
+     31909X  |  -.1200393   .6176051    -0.19   0.846
+>     -1.331519                                      
+>                   1.09144
+     331090  |   .1741516   .6355962     0.27   0.784
+>     -1.072619                                      
+>                  1.420923
+     332011  |  -.7042421   .4939496    -1.43   0.154
+>     -1.673162                                      
+>                  .2646779
+     333012  |   .2842311   .4887139     0.58   0.561
+>     -.6744188                                      
+>                  1.242881
+     333021  |   .1078054   .3163842     0.34   0.733
+>     -.5128065                                      
+>                  .7284173
+     333050  |   .0751579   .2940334     0.26   0.798
+>     -.5016112                                      
+>                   .651927
+     3330Xx  |  -.0320889   .6347242    -0.05   0.960
+>     -1.277149                                      
+>                  1.212971
+     339021  |   .2837587   .6642702     0.43   0.669
+>     -1.019258                                      
+>                  1.586776
+     339030  |  -.2379834   .3990265    -0.60   0.551
+>     -1.020704                                      
+>                  .5447377
+     339091  |  -.2695937   .6082408    -0.44   0.658
+>     -1.462705                                      
+>                  .9235174
+     33909X  |  -.3431869   .3886223    -0.88   0.377
+>     -1.105499                                      
+>                  .4191257
+     351011  |  -.1765189   .2621973    -0.67   0.501
+>     -.6908391                                      
+>                  .3378012
+     351012  |   -.176229   .3032165    -0.58   0.561
+>     -.7710114                                      
+>                  .4185534
+     352010  |  -.3325667   .2035876    -1.63   0.103
+>     -.7319193                                      
+>                  .0667859
+     352021  |  -.7898997   .3655552    -2.16   0.031
+>     -1.506964                                      
+>                 -.0728352
+     353011  |  -.8201538   .4447593    -1.84   0.065
+>     -1.692583                                      
+>                  .0522757
+     353023  |  -1.431507   .6085933    -2.35   0.019
+>      -2.62531                                      
+>                 -.2377044
+     353031  |   -.106656   .3709258    -0.29   0.774
+>     -.8342554                                      
+>                  .6209434
+     359011  |  -.9878108   .6070744    -1.63   0.104
+>     -2.178634                                      
+>                  .2030124
+     359021  |  -.2673826    .621203    -0.43   0.667
+>      -1.48592                                      
+>                  .9511547
+     371011  |  -.3316536   .3727093    -0.89   0.374
+>     -1.062751                                      
+>                  .3994443
+     371012  |  -.3224707    .411048    -0.78   0.433
+>     -1.128773                                      
+>                  .4838315
+     372012  |  -.4888291   .3007173    -1.63   0.104
+>     -1.078709                                      
+>                  .1010511
+     37201X  |  -.2719222   .2157911    -1.26   0.208
+>     -.6952131                                      
+>                  .1513686
+     372021  |   .6213652   .6398083     0.97   0.332
+>     -.6336679                                      
+>                  1.876398
+     373011  |  -.3691615   .4295298    -0.86   0.390
+>     -1.211717                                      
+>                  .4733944
+     373013  |   1.283038   .5897596     2.18   0.030
+>      .1261792                                      
+>                  2.439897
+     392011  |  -2.319302   .4870975    -4.76   0.000
+>     -3.274782                                      
+>                 -1.363823
+     392021  |  -.4786308   .5589172    -0.86   0.392
+>      -1.57499                                      
+>                  .6177283
+     3930Xx  |   .0933606   .4416032     0.21   0.833
+>     -.7728781                                      
+>                  .9595993
+     394031  |   .3018143   .7325966     0.41   0.680
+>      -1.13523                                      
+>                  1.738859
+     395012  |          0  (omitted)
+     397010  |  -.1112576   .4735536    -0.23   0.814
+>     -1.040169                                      
+>                  .8176541
+     399011  |   2.149822   .6617159     3.25   0.001
+>      .8518158                                      
+>                  3.447829
+     399031  |  -.1321024   .7859527    -0.17   0.867
+>     -1.673809                                      
+>                  1.409604
+     399032  |  -.6230177   .3932504    -1.58   0.113
+>     -1.394409                                      
+>                  .1483733
+     399041  |  -.7121622   .6302264    -1.13   0.259
+>       -1.9484                                      
+>                  .5240753
+     399099  |  -.7507788   .6137193    -1.22   0.221
+>     -1.954636                                      
+>                  .4530788
+     411011  |   .3414644    .195947     1.74   0.082
+>     -.0429007                                      
+>                  .7258294
+     411012  |   .3641909   .2280736     1.60   0.111
+>     -.0831931                                      
+>                  .8115749
+     412010  |  -.2993992   .2618539    -1.14   0.253
+>     -.8130458                                      
+>                  .2142474
+     412022  |   .2605098     .35741     0.73   0.466
+>     -.4405774                                      
+>                   .961597
+     412031  |  -.0201108   .2084761    -0.10   0.923
+>     -.4290527                                      
+>                  .3888312
+     413011  |   .4972142   .6105308     0.81   0.416
+>     -.7003889                                      
+>                  1.694817
+     413021  |  -.0589258   .3837622    -0.15   0.878
+>     -.8117049                                      
+>                  .6938533
+     413031  |   .0870439   .6304399     0.14   0.890
+>     -1.149612                                      
+>                    1.3237
+     413041  |   .0307996   .7185184     0.04   0.966
+>      -1.37863                                      
+>                  1.440229
+     413091  |   .4551683    .289135     1.57   0.116
+>     -.1119922                                      
+>                  1.022329
+     414010  |  -.3794193   .3466541    -1.09   0.274
+>     -1.059408                                      
+>                  .3005693
+     419020  |   .6309454   .3615588     1.75   0.081
+>       -.07828                                      
+>                  1.340171
+     419099  |   -.506168   .3774627    -1.34   0.180
+>      -1.24659                                      
+>                  .2342541
+     431011  |   -.090473   .2107479    -0.43   0.668
+>     -.5038712                                      
+>                  .3229253
+     433011  |  -.2025687   .3760773    -0.54   0.590
+>     -.9402733                                      
+>                  .5351359
+     433021  |  -.3301064   .3540002    -0.93   0.351
+>     -1.024505                                      
+>                  .3642922
+     433031  |  -.3490593   .2080027    -1.68   0.094
+>     -.7570725                                      
+>                  .0589539
+     433071  |  -.1434489   .4211587    -0.34   0.733
+>      -.969584                                      
+>                  .6826862
+     4330Xx  |   .1039211   .3833723     0.27   0.786
+>     -.6480932                                      
+>                  .8559354
+     434031  |   -.017903   .6173981    -0.03   0.977
+>     -1.228977                                      
+>                  1.193171
+     434041  |   .0364425   .6291626     0.06   0.954
+>     -1.197708                                      
+>                  1.270593
+     434051  |  -.1942914   .2408753    -0.81   0.420
+>     -.6667868                                      
+>                  .2782039
+     434061  |   .2613109   .4587607     0.57   0.569
+>     -.6385835                                      
+>                  1.161205
+     434071  |   .1475998     .62146     0.24   0.812
+>     -1.071442                                      
+>                  1.366641
+     434111  |   .0676967    .322663     0.21   0.834
+>     -.5652315                                      
+>                  .7006249
+     434131  |  -1.199345   .6291986    -1.91   0.057
+>     -2.433567                                      
+>                  .0348763
+     434161  |   .4511427   .6038644     0.75   0.455
+>     -.7333837                                      
+>                  1.635669
+     434171  |  -.3510822   .2731672    -1.29   0.199
+>     -.8869205                                      
+>                  .1847562
+     434181  |  -1.901233   .7707887    -2.47   0.014
+>     -3.413195                                      
+>                 -.3892721
+     434Xxx  |  -.9422565    .453804    -2.08   0.038
+>     -1.832428                                      
+>                  -.052085
+     435021  |   .2372873    .558437     0.42   0.671
+>     -.8581298                                      
+>                  1.332704
+     435031  |  -.0733668   .4580131    -0.16   0.873
+>     -.9717947                                      
+>                   .825061
+     435032  |  -.4479774   .6929969    -0.65   0.518
+>     -1.807344                                      
+>                  .9113894
+     435041  |   .3813808   .7061866     0.54   0.589
+>     -1.003859                                      
+>                   1.76662
+     435051  |   .0965833   .5061765     0.19   0.849
+>     -.8963208                                      
+>                  1.089487
+     435052  |   .0132751    .460236     0.03   0.977
+>     -.8895132                                      
+>                  .9160633
+     435053  |   .0999415   .5584684     0.18   0.858
+>     -.9955372                                      
+>                   1.19542
+     435061  |   .4497747    .650591     0.69   0.489
+>     -.8264096                                      
+>                  1.725959
+     435071  |  -.5473245   .3096613    -1.77   0.077
+>     -1.154749                                      
+>                  .0600999
+     435111  |    .183303   .4538391     0.40   0.686
+>     -.7069373                                      
+>                  1.073543
+     436011  |   .2807138   .2893219     0.97   0.332
+>     -.2868134                                      
+>                   .848241
+     436013  |  -.1778057   .6033825    -0.29   0.768
+>     -1.361387                                      
+>                  1.005775
+     436014  |  -.1352814   .2030082    -0.67   0.505
+>     -.5334976                                      
+>                  .2629348
+     439021  |  -.1231016    .629779    -0.20   0.845
+>     -1.358462                                      
+>                  1.112258
+     439051  |  -1.169904   .6217666    -1.88   0.060
+>     -2.389547                                      
+>                  .0497389
+     439061  |    .047671   .3047399     0.16   0.876
+>     -.5500998                                      
+>                  .6454419
+     439111  |   .1595474   .6937955     0.23   0.818
+>     -1.201386                                      
+>                  1.520481
+     439Xxx  |  -.4339225    .249694    -1.74   0.082
+>     -.9237166                                      
+>                  .0558715
+     451011  |   .1982435    .496363     0.40   0.690
+>     -.7754107                                      
+>                  1.171898
+     4520Xx  |   -.402281   .3268297    -1.23   0.219
+>     -1.043383                                      
+>                  .2388206
+     471011  |   .1790473   .2532219     0.71   0.480
+>      -.317667                                      
+>                  .6757616
+     472031  |  -.1267855   .2249398    -0.56   0.573
+>     -.5680221                                      
+>                  .3144512
+     472040  |   .3991222   .4523286     0.88   0.378
+>     -.4881552                                      
+>                    1.2864
+     472061  |  -.3951346   .2476876    -1.60   0.111
+>     -.8809928                                      
+>                  .0907237
+     472070  |   .0851445   .2988682     0.28   0.776
+>     -.5011083                                      
+>                  .6713974
+     472080  |          0  (omitted)
+     472111  |   .3430975   .3516158     0.98   0.329
+>      -.346624                                      
+>                  1.032819
+     472130  |   .3778835   .7763566     0.49   0.627
+>        -1.145                                      
+>                  1.900767
+     472140  |   .0464158   .6122154     0.08   0.940
+>     -1.154492                                      
+>                  1.247323
+     472152  |   -.006595   .2712226    -0.02   0.981
+>      -.538619                                      
+>                  .5254291
+     472181  |  -.0951707   .4533858    -0.21   0.834
+>     -.9845219                                      
+>                  .7941804
+     472211  |   -.240687   .6088365    -0.40   0.693
+>     -1.434967                                      
+>                  .9535927
+     472231  |   1.318174    .612295     2.15   0.031
+>      .1171106                                      
+>                  2.519238
+     472Xxx  |    .118098   .6094319     0.19   0.846
+>      -1.07735                                      
+>                  1.313546
+     474011  |  -.0776186   .7305718    -0.11   0.915
+>     -1.510691                                      
+>                  1.355454
+     474041  |  -.1238916   .6269165    -0.20   0.843
+>     -1.353637                                      
+>                  1.105853
+     474051  |  -.1497567   .2847091    -0.53   0.599
+>     -.7082356                                      
+>                  .4087221
+     4740Xx  |  -.3718631   .4543523    -0.82   0.413
+>      -1.26311                                      
+>                  .5193839
+     475020  |   .2245082   .4552975     0.49   0.622
+>     -.6685929                                      
+>                  1.117609
+     475040  |  -.9504816   .8162903    -1.16   0.244
+>     -2.551698                                      
+>                  .6507345
+     491011  |   .2323681   .4569349     0.51   0.611
+>     -.6639449                                      
+>                  1.128681
+     492011  |   .3484571   .6289503     0.55   0.580
+>     -.8852773                                      
+>                  1.582191
+     492020  |  -.3827164   .5026072    -0.76   0.447
+>     -1.368619                                      
+>                  .6031863
+     492092  |  -.3373612    .831555    -0.41   0.685
+>      -1.96852                                      
+>                  1.293798
+     492098  |  -.4250329   .7344577    -0.58   0.563
+>     -1.865728                                      
+>                  1.015662
+     49209X  |    -.32357   .6203857    -0.52   0.602
+>     -1.540504                                      
+>                  .8933641
+     493023  |   .4966558   .2781059     1.79   0.074
+>     -.0488702                                      
+>                  1.042182
+     493031  |   .1159058   .3286308     0.35   0.724
+>     -.5287289                                      
+>                  .7605404
+     493050  |   -.884649   1.011877    -0.87   0.382
+>     -2.869523                                      
+>                  1.100225
+     493090  |   .3081615   .4736487     0.65   0.515
+>     -.6209369                                      
+>                   1.23726
+     499021  |   .2171825    .329095     0.66   0.509
+>     -.4283627                                      
+>                  .8627277
+     499043  |  -.3101732   .6894298    -0.45   0.653
+>     -1.662543                                      
+>                  1.042196
+     49904X  |  -.2832754   .3635173    -0.78   0.436
+>     -.9963425                                      
+>                  .4297917
+     499051  |    .390052   .2966292     1.31   0.189
+>     -.1918089                                      
+>                  .9719129
+     499060  |  -.1385981   .7209119    -0.19   0.848
+>     -1.552722                                      
+>                  1.275526
+     499071  |   -.282401   .2503779    -1.13   0.260
+>     -.7735365                                      
+>                  .2087345
+     4990Xx  |   -.676937   .5125339    -1.32   0.187
+>     -1.682312                                      
+>                  .3284377
+     511011  |  -.2476299   .2594146    -0.95   0.340
+>     -.7564916                                      
+>                  .2612319
+     512020  |  -.0269098   .5037929    -0.05   0.957
+>     -1.015138                                      
+>                  .9613187
+     512041  |   .2906102   .9064928     0.32   0.749
+>     -1.487545                                      
+>                  2.068766
+     5120Xx  |  -.5802078    .253415    -2.29   0.022
+>     -1.077301                                      
+>                 -.0831147
+     513011  |   -.062027    .419864    -0.15   0.883
+>     -.8856225                                      
+>                  .7615686
+     513020  |   .1718289    .481363     0.36   0.721
+>     -.7724017                                      
+>                   1.11606
+     513092  |  -.6410345     .61776    -1.04   0.300
+>     -1.852818                                      
+>                  .5707492
+     513099  |  -.2289698   .7524975    -0.30   0.761
+>     -1.705051                                      
+>                  1.247112
+     514033  |      .0245   .9065537     0.03   0.978
+>     -1.753775                                      
+>                  1.802775
+     514041  |  -.3698928   .7163336    -0.52   0.606
+>     -1.775036                                      
+>                  1.035251
+     5140Xx  |   .0701926   .6949032     0.10   0.920
+>     -1.292913                                      
+>                  1.433299
+     514111  |  -.1006732   .4129245    -0.24   0.807
+>     -.9106564                                      
+>                    .70931
+     514120  |  -1.053488   .6655649    -1.58   0.114
+>     -2.359045                                      
+>                  .2520688
+     514Xxx  |  -.1159914   .4047243    -0.29   0.774
+>     -.9098893                                      
+>                  .6779065
+     515111  |   -.164007   .6772492    -0.24   0.809
+>     -1.492483                                      
+>                  1.164469
+     515112  |   -.067266   .6761285    -0.10   0.921
+>     -1.393544                                      
+>                  1.259012
+     516011  |  -.5284338   .4116801    -1.28   0.199
+>     -1.335976                                      
+>                  .2791083
+     517011  |  -.0818857   .6552333    -0.12   0.901
+>     -1.367176                                      
+>                  1.203405
+     517042  |   .3278369   .6415098     0.51   0.609
+>     -.9305338                                      
+>                  1.586208
+     518021  |    .271168   .4061674     0.67   0.504
+>     -.5255606                                      
+>                  1.067897
+     518031  |   .0864907   .3909824     0.22   0.825
+>     -.6804514                                      
+>                  .8534328
+     519010  |  -.5362767   .4246801    -1.26   0.207
+>     -1.369319                                      
+>                   .296766
+     519020  |  -.3607379   .4342995    -0.83   0.406
+>      -1.21265                                      
+>                   .491174
+     519061  |   .1774207   .2452302     0.72   0.469
+>     -.3036173                                      
+>                  .6584586
+     519111  |  -.3256044   .4568714    -0.71   0.476
+>     -1.221793                                      
+>                   .570584
+     519120  |  -.5354472   .6540052    -0.82   0.413
+>     -1.818329                                      
+>                  .7474344
+     519151  |   .5563333   .6471177     0.86   0.390
+>     -.7130377                                      
+>                  1.825704
+     519160  |  -.5518285   .5587641    -0.99   0.324
+>     -1.647887                                      
+>                  .5442302
+     519195  |   -.450584    .407673    -1.11   0.269
+>     -1.250266                                      
+>                  .3490979
+     5191Xx  |   -.485168   .2348479    -2.07   0.039
+>     -.9458402                                      
+>                 -.0244958
+     531000  |  -.5622607     .36413    -1.54   0.123
+>      -1.27653                                      
+>                  .1520083
+     532010  |          0  (omitted)
+     533030  |   -.234259   .2131522    -1.10   0.272
+>     -.6523734                                      
+>                  .1838554
+     533051  |  -.1068249   .8402776    -0.13   0.899
+>     -1.755094                                      
+>                  1.541444
+     533053  |  -.9296781   .6019505    -1.54   0.123
+>      -2.11045                                      
+>                  .2510942
+     534031  |  -.2593513   .9018675    -0.29   0.774
+>     -2.028434                                      
+>                  1.509731
+     5350Xx  |          0  (omitted)
+     536030  |   .5854994    .739026     0.79   0.428
+>      -.864157                                      
+>                  2.035156
+     5360Xx  |   .0481892    .503898     0.10   0.924
+>     -.9402453                                      
+>                  1.036624
+     537021  |  -.1278614   .5271694    -0.24   0.808
+>     -1.161945                                      
+>                  .9062219
+     537051  |  -.5004523   .3902842    -1.28   0.200
+>     -1.266025                                      
+>                    .26512
+     537061  |  -.3086847     .46302    -0.67   0.505
+>     -1.216934                                      
+>                  .5995647
+     537062  |  -.2938272   .2387656    -1.23   0.219
+>     -.7621844                                      
+>                    .17453
+     537065  |  -.3885934   .2609027    -1.49   0.137
+>     -.9003741                                      
+>                  .1231873
+     5370Xx  |  -.6901433   .6135702    -1.12   0.261
+>     -1.893708                                      
+>                  .5134219
+             |
+       _cons |   9.819649   .3243011    30.28   0.000
+>      9.183508                                      
+>                  10.45579
+-----------------------------------------------------
+> -------------------------
+
+. estimates store m3
+
+. display "Stored: m3 (full model)"
+Stored: m3 (full model)
+
+. 
+. ** Display estimates comparison table
+. estimates table m1 m2 m3, b(%9.3f) se stats(N r2)
+
+--------------------------------------------------
+    Variable |    m1          m2          m3      
+-------------+------------------------------------
+         sex |
+          2  |    -0.155      -0.194      -0.109  
+             |     0.032       0.031       0.037  
+             |
+       rac1p |
+          2  |    -0.085      -0.127       0.156  
+             |     0.273       0.259       0.309  
+          3  |     0.217       0.075       0.109  
+             |     0.438       0.416       0.393  
+          6  |    -0.018       0.041       0.130  
+             |     0.113       0.108       0.114  
+          8  |    -0.049      -0.158      -0.275  
+             |     0.216       0.206       0.188  
+          9  |    -0.015       0.023       0.056  
+             |     0.083       0.079       0.078  
+             |
+        hisp |
+          2  |    -0.091       0.210       0.289  
+             |     0.284       0.271       0.257  
+          3  |     0.021      -0.061       0.011  
+             |     0.231       0.220       0.233  
+          4  |    -0.304      -0.435      -0.249  
+             |     0.414       0.393       0.503  
+          5  |     0.178       0.012      -0.297  
+             |     0.517       0.491       0.428  
+          6  |     0.050       0.004      -0.255  
+             |     0.715       0.680       0.688  
+          9  |     0.872       0.800       0.348  
+             |     0.437       0.415       0.481  
+         11  |    -0.144      -0.046       0.014  
+             |     0.517       0.491       0.437  
+         13  |     2.100       1.622       1.850  
+             |     0.719       0.684       0.609  
+         14  |     0.369       0.229       0.371  
+             |     0.730       0.694       0.649  
+         16  |    -0.071      -0.115      -0.190  
+             |     0.439       0.417       0.391  
+         19  |    -0.196      -0.343       0.142  
+             |     0.715       0.679       0.631  
+         23  |     0.288       0.088      -0.160  
+             |     0.276       0.263       0.249  
+         24  |    -0.050      -0.046      -0.185  
+             |     0.282       0.268       0.274  
+             |
+         mar |
+          2  |    -0.123      -0.072      -0.038  
+             |     0.155       0.147       0.153  
+          3  |    -0.130      -0.067      -0.063  
+             |     0.049       0.047       0.046  
+          4  |    -0.118      -0.119      -0.208  
+             |     0.130       0.124       0.128  
+          5  |    -0.268      -0.221      -0.097  
+             |     0.042       0.040       0.040  
+             |
+        agep |     0.001       0.002       0.004  
+             |     0.002       0.001       0.002  
+        schl |                 0.073       0.030  
+             |                 0.006       0.007  
+        wkhp |                 0.012       0.011  
+             |                 0.002       0.002  
+             |
+         cow |
+          2  |                             0.058  
+             |                             0.055  
+          3  |                             0.145  
+             |                             0.078  
+          4  |                             0.066  
+             |                             0.096  
+          5  |                             0.274  
+             |                             0.138  
+          6  |                            -0.789  
+             |                             0.140  
+          7  |                            -0.325  
+             |                             0.079  
+          8  |                            -1.566  
+             |                             0.275  
+             |
+         esr |
+          2  |                            -0.137  
+             |                             0.122  
+             |
+   naicsp_id |
+        112  |                             0.263  
+             |                             0.218  
+       1133  |                             0.005  
+             |                             0.717  
+       113M  |                            -0.033  
+             |                             0.413  
+        115  |                             0.270  
+             |                             0.455  
+       2123  |                             0.726  
+             |                             0.638  
+      2211P  |                             0.493  
+             |                             0.273  
+      2212P  |                             0.621  
+             |                             0.641  
+      22132  |                             0.022  
+             |                             0.406  
+      2213M  |                            -0.369  
+             |                             0.435  
+         23  |                             0.187  
+             |                             0.251  
+       3113  |                             0.307  
+             |                             0.648  
+       3114  |                            -0.170  
+             |                             0.496  
+       3115  |                             0.215  
+             |                             0.294  
+       3116  |                            -0.450  
+             |                             0.765  
+     311811  |                            -0.130  
+             |                             0.571  
+      3118Z  |                            -0.443  
+             |                             0.512  
+      311M1  |                             0.015  
+             |                             0.465  
+      311M2  |                             0.614  
+             |                             0.417  
+       311S  |                             0.603  
+             |                             0.634  
+       3121  |                             0.225  
+             |                             0.334  
+       315M  |                             0.092  
+             |                             0.655  
+        31M  |                            -0.114  
+             |                             0.656  
+       3211  |                             0.158  
+             |                             0.481  
+       3212  |                             0.053  
+             |                             0.641  
+     32199M  |                             0.145  
+             |                             0.644  
+     3219Zm  |                            -0.103  
+             |                             0.326  
+       3221  |                             0.914  
+             |                             0.663  
+       3231  |                             0.266  
+             |                             0.380  
+       3252  |                            -0.447  
+             |                             0.556  
+       3253  |                             0.460  
+             |                             0.476  
+       3254  |                            -0.003  
+             |                             0.339  
+       3256  |                             0.035  
+             |                             0.420  
+       325M  |                            -1.735  
+             |                             0.648  
+       3261  |                            -0.011  
+             |                             0.414  
+      3262M  |                             0.607  
+             |                             0.459  
+      32711  |                             0.456  
+             |                             0.637  
+      32712  |                            -0.046  
+             |                             0.672  
+       3272  |                             0.236  
+             |                             0.520  
+       3279  |                             0.266  
+             |                             0.372  
+       3313  |                             2.048  
+             |                             0.623  
+       3314  |                            -0.671  
+             |                             0.625  
+       3315  |                             0.275  
+             |                             0.627  
+       3321  |                             0.558  
+             |                             0.528  
+       3322  |                            -0.440  
+             |                             0.661  
+       3327  |                             0.664  
+             |                             0.386  
+       332M  |                            -0.179  
+             |                             0.713  
+      332Mz  |                            -0.089  
+             |                             0.361  
+       3333  |                             0.845  
+             |                             0.647  
+       3335  |                             0.291  
+             |                             0.609  
+      333Ms  |                             0.105  
+             |                             0.331  
+       3341  |                             0.517  
+             |                             0.673  
+       3345  |                             0.770  
+             |                             0.411  
+      334M2  |                             0.438  
+             |                             0.288  
+       3352  |                            -0.421  
+             |                             0.670  
+       335M  |                             0.247  
+             |                             0.304  
+    33641M1  |                             0.476  
+             |                             0.276  
+       336M  |                             0.594  
+             |                             0.361  
+        337  |                            -0.017  
+             |                             0.350  
+       3391  |                             0.284  
+             |                             0.279  
+      3399M  |                             0.514  
+             |                             0.450  
+     3399Zm  |                             0.480  
+             |                             0.284  
+        3Ms  |                            -0.010  
+             |                             0.340  
+       4231  |                            -0.097  
+             |                             0.316  
+       4234  |                             0.721  
+             |                             0.631  
+       4236  |                             0.207  
+             |                             0.479  
+       4237  |                             0.683  
+             |                             0.421  
+       4238  |                             0.634  
+             |                             0.480  
+      42393  |                            -0.844  
+             |                             0.639  
+      4239Z  |                             0.011  
+             |                             0.500  
+       4243  |                            -0.217  
+             |                             0.427  
+       4244  |                             0.249  
+             |                             0.347  
+       4245  |                            -0.418  
+             |                             0.475  
+       4247  |                             0.441  
+             |                             0.641  
+      4249Z  |                             0.053  
+             |                             0.642  
+       424M  |                             2.219  
+             |                             0.653  
+        42S  |                             0.158  
+             |                             0.747  
+       4411  |                            -0.285  
+             |                             0.265  
+       4412  |                             0.409  
+             |                             0.413  
+       4413  |                            -0.585  
+             |                             0.369  
+      44414  |                            -0.019  
+             |                             0.369  
+      4441Z  |                             0.034  
+             |                             0.271  
+       4442  |                            -0.156  
+             |                             0.375  
+      44511  |                            -0.209  
+             |                             0.256  
+      44513  |                            -0.107  
+             |                             0.379  
+       4452  |                            -0.234  
+             |                             0.418  
+       4453  |                            -0.364  
+             |                             0.627  
+       4491  |                             0.064  
+             |                             0.363  
+       4492  |                             0.350  
+             |                             0.326  
+       4551  |                            -0.589  
+             |                             0.631  
+       4552  |                            -0.060  
+             |                             0.270  
+      45611  |                            -0.024  
+             |                             0.300  
+      4561Z  |                             0.319  
+             |                             0.358  
+       4571  |                            -0.760  
+             |                             0.473  
+       4572  |                            -0.018  
+             |                             0.359  
+       4581  |                            -0.814  
+             |                             0.348  
+      4591M  |                            -0.228  
+             |                             0.297  
+      45921  |                            -0.535  
+             |                             0.628  
+      45942  |                            -0.455  
+             |                             0.372  
+       4595  |                            -0.862  
+             |                             0.661  
+       4599  |                            -0.105  
+             |                             0.295  
+        481  |                             1.316  
+             |                             0.492  
+        482  |                             0.773  
+             |                             0.815  
+        483  |                             0.120  
+             |                             0.640  
+        484  |                             0.222  
+             |                             0.287  
+       485M  |                            -0.133  
+             |                             0.631  
+        486  |                             0.102  
+             |                             0.626  
+        488  |                             0.135  
+             |                             0.328  
+        491  |                            -0.190  
+             |                             0.435  
+        492  |                             0.363  
+             |                             0.405  
+        493  |                             0.772  
+             |                             0.655  
+        4Ms  |                            -1.160  
+             |                             0.351  
+       5121  |                             0.381  
+             |                             0.492  
+      51311  |                            -0.266  
+             |                             0.492  
+      5131Z  |                            -0.066  
+             |                             0.637  
+       5132  |                             0.370  
+             |                             0.668  
+        516  |                            -0.100  
+             |                             0.432  
+     517111  |                             0.572  
+             |                             0.440  
+       517Z  |                             0.570  
+             |                             0.450  
+       5182  |                             0.032  
+             |                             0.501  
+      51921  |                            -0.537  
+             |                             0.688  
+      5221M  |                            -0.319  
+             |                             0.322  
+       522M  |                             0.665  
+             |                             0.354  
+       5241  |                             0.248  
+             |                             0.304  
+       5242  |                             0.314  
+             |                             0.321  
+       52M2  |                             0.648  
+             |                             0.299  
+       52M3  |                             0.043  
+             |                             0.299  
+       5313  |                            -0.164  
+             |                             0.425  
+       531M  |                             0.143  
+             |                             0.295  
+        53M  |                            -0.833  
+             |                             0.662  
+       5411  |                             0.051  
+             |                             0.300  
+       5412  |                            -0.019  
+             |                             0.294  
+       5413  |                             0.170  
+             |                             0.271  
+       5414  |                             0.277  
+             |                             0.643  
+       5415  |                             0.293  
+             |                             0.248  
+       5416  |                             0.315  
+             |                             0.264  
+       5417  |                             0.114  
+             |                             0.338  
+       5418  |                             0.275  
+             |                             0.381  
+      54194  |                            -0.369  
+             |                             0.423  
+      5419Z  |                             0.294  
+             |                             0.482  
+         55  |                             0.502  
+             |                             0.389  
+       5613  |                             0.326  
+             |                             0.349  
+       5614  |                            -0.617  
+             |                             0.383  
+       5615  |                            -0.051  
+             |                             0.458  
+       5616  |                             0.161  
+             |                             0.479  
+      56173  |                            -0.755  
+             |                             0.453  
+      5617Z  |                             0.143  
+             |                             0.313  
+       561M  |                            -0.128  
+             |                             0.452  
+        562  |                             0.153  
+             |                             0.288  
+       6111  |                            -0.313  
+             |                             0.248  
+      611M1  |                            -0.027  
+             |                             0.248  
+      611M2  |                            -0.160  
+             |                             0.481  
+      611M3  |                            -0.148  
+             |                             0.336  
+       6211  |                             0.164  
+             |                             0.289  
+       6212  |                             0.493  
+             |                             0.934  
+      62132  |                            -0.011  
+             |                             0.478  
+     6213Zm  |                            -0.018  
+             |                             0.524  
+       6214  |                             0.042  
+             |                             0.263  
+       6216  |                             0.588  
+             |                             0.317  
+       621M  |                             0.345  
+             |                             0.290  
+       6222  |                            -0.211  
+             |                             0.867  
+       622M  |                             0.036  
+             |                             0.244  
+       6231  |                            -0.025  
+             |                             0.292  
+       623M  |                            -0.074  
+             |                             0.277  
+       6241  |                             0.118  
+             |                             0.270  
+       6242  |                            -0.045  
+             |                             0.303  
+       6243  |                             0.118  
+             |                             0.495  
+       6244  |                            -0.509  
+             |                             0.352  
+       7111  |                            -0.773  
+             |                             0.527  
+       7115  |                            -0.363  
+             |                             0.486  
+       711M  |                            -0.793  
+             |                             0.557  
+        712  |                            -0.217  
+             |                             0.400  
+       713Z  |                            -0.028  
+             |                             0.255  
+       7211  |                             0.085  
+             |                             0.280  
+       721M  |                             0.209  
+             |                             0.646  
+       722Z  |                            -0.017  
+             |                             0.269  
+     811192  |                             0.932  
+             |                             0.763  
+      8111Z  |                            -0.315  
+             |                             0.314  
+       8112  |                             0.107  
+             |                             0.623  
+       8113  |                             0.729  
+             |                             0.705  
+       8114  |                             1.002  
+             |                             0.847  
+     812112  |                             0.059  
+             |                             0.493  
+      8121M  |                            -0.510  
+             |                             0.641  
+       8122  |                            -0.216  
+             |                             0.477  
+       8129  |                             1.524  
+             |                             0.465  
+       8131  |                             0.611  
+             |                             0.637  
+      8139Z  |                            -0.688  
+             |                             0.477  
+       813M  |                            -0.030  
+             |                             0.270  
+        814  |                            -2.990  
+             |                             0.793  
+      92113  |                            -0.578  
+             |                             0.643  
+      92119  |                             0.483  
+             |                             0.514  
+     9211Mp  |                            -0.025  
+             |                             0.274  
+        923  |                             0.073  
+             |                             0.275  
+      9281P  |                            -0.082  
+             |                             0.305  
+       92M1  |                            -0.231  
+             |                             0.349  
+       92M2  |                            -0.293  
+             |                             0.296  
+       92Mp  |                             0.109  
+             |                             0.312  
+             |
+     socp_id |
+     1110Xx  |                             0.918  
+             |                             0.196  
+     112011  |                             0.086  
+             |                             0.673  
+     112021  |                             0.333  
+             |                             0.280  
+     112022  |                             0.762  
+             |                             0.329  
+     112030  |                             0.077  
+             |                             0.391  
+     113012  |                             0.329  
+             |                             0.400  
+     113013  |                             0.346  
+             |                             0.375  
+     113021  |                             0.506  
+             |                             0.272  
+     113031  |                             0.286  
+             |                             0.236  
+     113051  |                            -0.123  
+             |                             0.285  
+     113061  |                             0.206  
+             |                             0.733  
+     113071  |                             0.091  
+             |                             0.262  
+     113121  |                             0.408  
+             |                             0.317  
+     119013  |                            -0.086  
+             |                             0.323  
+     119021  |                             0.090  
+             |                             0.239  
+     119030  |                             0.455  
+             |                             0.211  
+     119041  |                             1.073  
+             |                             0.302  
+     119051  |                            -0.237  
+             |                             0.247  
+     119070  |                             0.423  
+             |                             0.380  
+     119081  |                             0.092  
+             |                             0.407  
+     119111  |                             0.240  
+             |                             0.232  
+     119141  |                             0.020  
+             |                             0.312  
+     119151  |                             0.228  
+             |                             0.236  
+     119161  |                             0.307  
+             |                             0.605  
+     1191Xx  |                             0.168  
+             |                             0.183  
+     131022  |                             0.286  
+             |                             0.380  
+     131023  |                            -0.249  
+             |                             0.316  
+     131030  |                             0.042  
+             |                             0.331  
+     131041  |                             0.049  
+             |                             0.285  
+     131051  |                             0.597  
+             |                             0.397  
+     131070  |                            -0.096  
+             |                             0.246  
+     131081  |                            -0.335  
+             |                             0.462  
+     131082  |                             0.137  
+             |                             0.219  
+     131111  |                             0.493  
+             |                             0.303  
+     131131  |                             0.930  
+             |                             0.605  
+     131141  |                             0.180  
+             |                             0.651  
+     131151  |                            -0.004  
+             |                             0.388  
+     131161  |                             0.434  
+             |                             0.448  
+     131199  |                             0.074  
+             |                             0.243  
+     132011  |                             0.717  
+             |                             0.240  
+     132051  |                             0.250  
+             |                             0.276  
+     132052  |                             1.124  
+             |                             0.284  
+     132070  |                            -0.897  
+             |                             0.333  
+     132081  |                             0.941  
+             |                             0.857  
+     132082  |                             0.858  
+             |                             0.630  
+     151211  |                             0.320  
+             |                             0.349  
+     151212  |                             0.002  
+             |                             0.614  
+     151230  |                             0.019  
+             |                             0.303  
+     151241  |                             0.264  
+             |                             0.416  
+     151244  |                             0.211  
+             |                             0.303  
+     15124X  |                             0.159  
+             |                             0.744  
+     151251  |                             0.484  
+             |                             0.349  
+     151252  |                             0.358  
+             |                             0.210  
+     151254  |                             0.398  
+             |                             0.471  
+     151255  |                             0.946  
+             |                             0.379  
+     151299  |                            -0.010  
+             |                             0.218  
+     152031  |                             0.639  
+             |                             0.403  
+     1520Xx  |                             0.294  
+             |                             0.317  
+     171011  |                             0.243  
+             |                             0.352  
+     171012  |                             0.131  
+             |                             0.367  
+     172011  |                             0.189  
+             |                             0.619  
+     172041  |                             0.437  
+             |                             0.558  
+     172051  |                             0.177  
+             |                             0.342  
+     172070  |                             0.623  
+             |                             0.313  
+     172081  |                             0.699  
+             |                             0.390  
+     172110  |                             0.219  
+             |                             0.310  
+     172131  |                            -0.493  
+             |                             0.665  
+     172141  |                             0.344  
+             |                             0.459  
+     1721Yy  |                             0.186  
+             |                             0.241  
+     17301X  |                            -0.104  
+             |                             0.486  
+     173023  |                            -0.456  
+             |                             0.625  
+     17302X  |                            -0.116  
+             |                             0.322  
+     173031  |                            -0.381  
+             |                             0.730  
+     191020  |                             0.190  
+             |                             0.284  
+     191030  |                            -0.117  
+             |                             0.470  
+     1910Xx  |                             0.334  
+             |                             0.612  
+     192010  |                             1.098  
+             |                             0.449  
+     192030  |                             0.352  
+             |                             0.471  
+     192041  |                             0.410  
+             |                             0.462  
+     192099  |                            -0.069  
+             |                             0.313  
+     193034  |                             0.142  
+             |                             0.446  
+     19303X  |                             0.284  
+             |                             0.494  
+     193051  |                             0.095  
+             |                             0.656  
+     194010  |                            -0.740  
+             |                             0.469  
+     1940Yy  |                            -0.626  
+             |                             0.394  
+     195010  |                             0.160  
+             |                             0.659  
+     211011  |                            -0.224  
+             |                             0.315  
+     211012  |                             0.138  
+             |                             0.255  
+     211013  |                            -0.367  
+             |                             0.460  
+     211014  |                             0.100  
+             |                             0.285  
+     211015  |                            -0.213  
+             |                             0.613  
+     211019  |                            -0.122  
+             |                             0.390  
+     211021  |                            -0.265  
+             |                             0.613  
+     211022  |                            -0.302  
+             |                             0.637  
+     211029  |                            -0.076  
+             |                             0.248  
+     211092  |                             0.336  
+             |                             0.634  
+     211093  |                             0.107  
+             |                             0.286  
+     212011  |                            -1.059  
+             |                             0.658  
+     2310Xx  |                             0.129  
+             |                             0.272  
+     232011  |                            -0.085  
+             |                             0.281  
+     251000  |                             0.179  
+             |                             0.228  
+     252010  |                             0.037  
+             |                             0.288  
+     252020  |                             0.134  
+             |                             0.197  
+     252030  |                             0.289  
+             |                             0.206  
+     252050  |                             0.262  
+             |                             0.243  
+     2530Xx  |                             0.168  
+             |                             0.381  
+     254010  |                             0.088  
+             |                             0.372  
+     254022  |                             0.343  
+             |                             0.340  
+     259040  |                            -0.479  
+             |                             0.222  
+     2590Xx  |                            -0.369  
+             |                             0.315  
+     271010  |                             1.609  
+             |                             0.748  
+     271024  |                             0.226  
+             |                             0.314  
+     27102X  |                             0.160  
+             |                             0.308  
+     272012  |                             0.096  
+             |                             0.472  
+     272022  |                            -0.294  
+             |                             0.403  
+     272042  |                             0.801  
+             |                             0.502  
+     273023  |                         (omitted)  
+             |                                    
+     273031  |                            -0.122  
+             |                             0.377  
+     273041  |                         (omitted)  
+             |                                    
+     273042  |                            -0.070  
+             |                             0.633  
+     273043  |                             0.180  
+             |                             0.490  
+     273091  |                             0.212  
+             |                             0.604  
+     273099  |                             0.181  
+             |                             0.507  
+     274021  |                            -1.039  
+             |                             0.647  
+     274030  |                             1.119  
+             |                             0.707  
+     2740Xx  |                         (omitted)  
+             |                                    
+     291020  |                            -1.142  
+             |                             1.010  
+     291031  |                             0.193  
+             |                             0.605  
+     291051  |                             0.333  
+             |                             0.398  
+     291071  |                             0.630  
+             |                             0.255  
+     291081  |                            -0.125  
+             |                             0.603  
+     291122  |                             0.124  
+             |                             0.603  
+     291123  |                            -0.014  
+             |                             0.383  
+     291126  |                             0.064  
+             |                             0.381  
+     291127  |                             0.060  
+             |                             0.380  
+     29112X  |                            -0.066  
+             |                             0.446  
+     291131  |                             0.966  
+             |                             0.418  
+     291141  |                             0.353  
+             |                             0.194  
+     2911Xx  |                             0.165  
+             |                             0.264  
+     291210  |                             0.904  
+             |                             0.234  
+     291240  |                         (omitted)  
+             |                                    
+     291291  |                            -4.135  
+             |                             0.761  
+     291292  |                            -0.392  
+             |                             0.943  
+     291299  |                             0.513  
+             |                             0.618  
+     292010  |                             0.235  
+             |                             0.342  
+     292032  |                             0.255  
+             |                             0.448  
+     292034  |                             0.538  
+             |                             0.342  
+     292035  |                             0.364  
+             |                             0.605  
+     29203X  |                             2.449  
+             |                             0.629  
+     292042  |                            -0.273  
+             |                             0.452  
+     292043  |                            -0.523  
+             |                             0.626  
+     292052  |                            -0.197  
+             |                             0.391  
+     292053  |                            -0.236  
+             |                             0.452  
+     292056  |                             0.568  
+             |                             0.450  
+     292061  |                             0.284  
+             |                             0.392  
+     292072  |                            -0.155  
+             |                             0.307  
+     292090  |                            -1.103  
+             |                             0.606  
+     299000  |                             0.010  
+             |                             0.450  
+     311121  |                            -0.868  
+             |                             0.430  
+     311122  |                            -0.900  
+             |                             0.248  
+     311131  |                            -0.306  
+             |                             0.237  
+     319011  |                             0.403  
+             |                             0.745  
+     319091  |                            -0.516  
+             |                             0.966  
+     319097  |                            -0.307  
+             |                             0.449  
+     31909X  |                            -0.120  
+             |                             0.618  
+     331090  |                             0.174  
+             |                             0.636  
+     332011  |                            -0.704  
+             |                             0.494  
+     333012  |                             0.284  
+             |                             0.489  
+     333021  |                             0.108  
+             |                             0.316  
+     333050  |                             0.075  
+             |                             0.294  
+     3330Xx  |                            -0.032  
+             |                             0.635  
+     339021  |                             0.284  
+             |                             0.664  
+     339030  |                            -0.238  
+             |                             0.399  
+     339091  |                            -0.270  
+             |                             0.608  
+     33909X  |                            -0.343  
+             |                             0.389  
+     351011  |                            -0.177  
+             |                             0.262  
+     351012  |                            -0.176  
+             |                             0.303  
+     352010  |                            -0.333  
+             |                             0.204  
+     352021  |                            -0.790  
+             |                             0.366  
+     353011  |                            -0.820  
+             |                             0.445  
+     353023  |                            -1.432  
+             |                             0.609  
+     353031  |                            -0.107  
+             |                             0.371  
+     359011  |                            -0.988  
+             |                             0.607  
+     359021  |                            -0.267  
+             |                             0.621  
+     371011  |                            -0.332  
+             |                             0.373  
+     371012  |                            -0.322  
+             |                             0.411  
+     372012  |                            -0.489  
+             |                             0.301  
+     37201X  |                            -0.272  
+             |                             0.216  
+     372021  |                             0.621  
+             |                             0.640  
+     373011  |                            -0.369  
+             |                             0.430  
+     373013  |                             1.283  
+             |                             0.590  
+     392011  |                            -2.319  
+             |                             0.487  
+     392021  |                            -0.479  
+             |                             0.559  
+     3930Xx  |                             0.093  
+             |                             0.442  
+     394031  |                             0.302  
+             |                             0.733  
+     395012  |                         (omitted)  
+             |                                    
+     397010  |                            -0.111  
+             |                             0.474  
+     399011  |                             2.150  
+             |                             0.662  
+     399031  |                            -0.132  
+             |                             0.786  
+     399032  |                            -0.623  
+             |                             0.393  
+     399041  |                            -0.712  
+             |                             0.630  
+     399099  |                            -0.751  
+             |                             0.614  
+     411011  |                             0.341  
+             |                             0.196  
+     411012  |                             0.364  
+             |                             0.228  
+     412010  |                            -0.299  
+             |                             0.262  
+     412022  |                             0.261  
+             |                             0.357  
+     412031  |                            -0.020  
+             |                             0.208  
+     413011  |                             0.497  
+             |                             0.611  
+     413021  |                            -0.059  
+             |                             0.384  
+     413031  |                             0.087  
+             |                             0.630  
+     413041  |                             0.031  
+             |                             0.719  
+     413091  |                             0.455  
+             |                             0.289  
+     414010  |                            -0.379  
+             |                             0.347  
+     419020  |                             0.631  
+             |                             0.362  
+     419099  |                            -0.506  
+             |                             0.377  
+     431011  |                            -0.090  
+             |                             0.211  
+     433011  |                            -0.203  
+             |                             0.376  
+     433021  |                            -0.330  
+             |                             0.354  
+     433031  |                            -0.349  
+             |                             0.208  
+     433071  |                            -0.143  
+             |                             0.421  
+     4330Xx  |                             0.104  
+             |                             0.383  
+     434031  |                            -0.018  
+             |                             0.617  
+     434041  |                             0.036  
+             |                             0.629  
+     434051  |                            -0.194  
+             |                             0.241  
+     434061  |                             0.261  
+             |                             0.459  
+     434071  |                             0.148  
+             |                             0.621  
+     434111  |                             0.068  
+             |                             0.323  
+     434131  |                            -1.199  
+             |                             0.629  
+     434161  |                             0.451  
+             |                             0.604  
+     434171  |                            -0.351  
+             |                             0.273  
+     434181  |                            -1.901  
+             |                             0.771  
+     434Xxx  |                            -0.942  
+             |                             0.454  
+     435021  |                             0.237  
+             |                             0.558  
+     435031  |                            -0.073  
+             |                             0.458  
+     435032  |                            -0.448  
+             |                             0.693  
+     435041  |                             0.381  
+             |                             0.706  
+     435051  |                             0.097  
+             |                             0.506  
+     435052  |                             0.013  
+             |                             0.460  
+     435053  |                             0.100  
+             |                             0.558  
+     435061  |                             0.450  
+             |                             0.651  
+     435071  |                            -0.547  
+             |                             0.310  
+     435111  |                             0.183  
+             |                             0.454  
+     436011  |                             0.281  
+             |                             0.289  
+     436013  |                            -0.178  
+             |                             0.603  
+     436014  |                            -0.135  
+             |                             0.203  
+     439021  |                            -0.123  
+             |                             0.630  
+     439051  |                            -1.170  
+             |                             0.622  
+     439061  |                             0.048  
+             |                             0.305  
+     439111  |                             0.160  
+             |                             0.694  
+     439Xxx  |                            -0.434  
+             |                             0.250  
+     451011  |                             0.198  
+             |                             0.496  
+     4520Xx  |                            -0.402  
+             |                             0.327  
+     471011  |                             0.179  
+             |                             0.253  
+     472031  |                            -0.127  
+             |                             0.225  
+     472040  |                             0.399  
+             |                             0.452  
+     472061  |                            -0.395  
+             |                             0.248  
+     472070  |                             0.085  
+             |                             0.299  
+     472080  |                         (omitted)  
+             |                                    
+     472111  |                             0.343  
+             |                             0.352  
+     472130  |                             0.378  
+             |                             0.776  
+     472140  |                             0.046  
+             |                             0.612  
+     472152  |                            -0.007  
+             |                             0.271  
+     472181  |                            -0.095  
+             |                             0.453  
+     472211  |                            -0.241  
+             |                             0.609  
+     472231  |                             1.318  
+             |                             0.612  
+     472Xxx  |                             0.118  
+             |                             0.609  
+     474011  |                            -0.078  
+             |                             0.731  
+     474041  |                            -0.124  
+             |                             0.627  
+     474051  |                            -0.150  
+             |                             0.285  
+     4740Xx  |                            -0.372  
+             |                             0.454  
+     475020  |                             0.225  
+             |                             0.455  
+     475040  |                            -0.950  
+             |                             0.816  
+     491011  |                             0.232  
+             |                             0.457  
+     492011  |                             0.348  
+             |                             0.629  
+     492020  |                            -0.383  
+             |                             0.503  
+     492092  |                            -0.337  
+             |                             0.832  
+     492098  |                            -0.425  
+             |                             0.734  
+     49209X  |                            -0.324  
+             |                             0.620  
+     493023  |                             0.497  
+             |                             0.278  
+     493031  |                             0.116  
+             |                             0.329  
+     493050  |                            -0.885  
+             |                             1.012  
+     493090  |                             0.308  
+             |                             0.474  
+     499021  |                             0.217  
+             |                             0.329  
+     499043  |                            -0.310  
+             |                             0.689  
+     49904X  |                            -0.283  
+             |                             0.364  
+     499051  |                             0.390  
+             |                             0.297  
+     499060  |                            -0.139  
+             |                             0.721  
+     499071  |                            -0.282  
+             |                             0.250  
+     4990Xx  |                            -0.677  
+             |                             0.513  
+     511011  |                            -0.248  
+             |                             0.259  
+     512020  |                            -0.027  
+             |                             0.504  
+     512041  |                             0.291  
+             |                             0.906  
+     5120Xx  |                            -0.580  
+             |                             0.253  
+     513011  |                            -0.062  
+             |                             0.420  
+     513020  |                             0.172  
+             |                             0.481  
+     513092  |                            -0.641  
+             |                             0.618  
+     513099  |                            -0.229  
+             |                             0.752  
+     514033  |                             0.024  
+             |                             0.907  
+     514041  |                            -0.370  
+             |                             0.716  
+     5140Xx  |                             0.070  
+             |                             0.695  
+     514111  |                            -0.101  
+             |                             0.413  
+     514120  |                            -1.053  
+             |                             0.666  
+     514Xxx  |                            -0.116  
+             |                             0.405  
+     515111  |                            -0.164  
+             |                             0.677  
+     515112  |                            -0.067  
+             |                             0.676  
+     516011  |                            -0.528  
+             |                             0.412  
+     517011  |                            -0.082  
+             |                             0.655  
+     517042  |                             0.328  
+             |                             0.642  
+     518021  |                             0.271  
+             |                             0.406  
+     518031  |                             0.086  
+             |                             0.391  
+     519010  |                            -0.536  
+             |                             0.425  
+     519020  |                            -0.361  
+             |                             0.434  
+     519061  |                             0.177  
+             |                             0.245  
+     519111  |                            -0.326  
+             |                             0.457  
+     519120  |                            -0.535  
+             |                             0.654  
+     519151  |                             0.556  
+             |                             0.647  
+     519160  |                            -0.552  
+             |                             0.559  
+     519195  |                            -0.451  
+             |                             0.408  
+     5191Xx  |                            -0.485  
+             |                             0.235  
+     531000  |                            -0.562  
+             |                             0.364  
+     532010  |                         (omitted)  
+             |                                    
+     533030  |                            -0.234  
+             |                             0.213  
+     533051  |                            -0.107  
+             |                             0.840  
+     533053  |                            -0.930  
+             |                             0.602  
+     534031  |                            -0.259  
+             |                             0.902  
+     5350Xx  |                         (omitted)  
+             |                                    
+     536030  |                             0.585  
+             |                             0.739  
+     5360Xx  |                             0.048  
+             |                             0.504  
+     537021  |                            -0.128  
+             |                             0.527  
+     537051  |                            -0.500  
+             |                             0.390  
+     537061  |                            -0.309  
+             |                             0.463  
+     537062  |                            -0.294  
+             |                             0.239  
+     537065  |                            -0.389  
+             |                             0.261  
+     5370Xx  |                            -0.690  
+             |                             0.614  
+             |
+       _cons |    11.169       9.139       9.820  
+             |     0.079       0.160       0.324  
+-------------+------------------------------------
+           N |      2029        2029        2029  
+          r2 |     0.043       0.137       0.547  
+--------------------------------------------------
+                                      Legend: b/se
+
+. 
+. ** TASK 7: Required macro-based keep list
+. 
+. ** Define keepvars macro with all required variable
+> s
+. local keepvars "serialno sporder agep sex rac1p his
+> p mar schl wkhp wagp pincp povpip esr cow adjinc pw
+> gtp naicsp socp naicsp_id socp_id ln_wage"
+
+. 
+. ** Verify each kept variable exists before keeping
+. display "--- Verifying all keepvars exist ---"
+--- Verifying all keepvars exist ---
+
+. foreach v of local keepvars {
+  2.     capture confirm variable `v'
+  3.     if _rc != 0 {
+  4.         display as error "ERROR: variable `v' no
+> t found — cannot keep."
+  5.     }
+  6.     else {
+  7.         display as txt "Confirmed: `v'"
+  8.     }
+  9. }
+Confirmed: serialno
+Confirmed: sporder
+Confirmed: agep
+Confirmed: sex
+Confirmed: rac1p
+Confirmed: hisp
+Confirmed: mar
+Confirmed: schl
+Confirmed: wkhp
+Confirmed: wagp
+Confirmed: pincp
+Confirmed: povpip
+Confirmed: esr
+Confirmed: cow
+Confirmed: adjinc
+Confirmed: pwgtp
+Confirmed: naicsp
+Confirmed: socp
+Confirmed: naicsp_id
+Confirmed: socp_id
+Confirmed: ln_wage
+
+. 
+. ** Apply macro-driven keep command
+. keep `keepvars'
+
+. 
+. ** Save final analysis dataset
+. save "processed_data/ps5_analysis_data.dta", replac
+> e
+file processed_data/ps5_analysis_data.dta saved
+
+. display "Saved: processed_data/ps5_analysis_data.dt
+> a"
+Saved: processed_data/ps5_analysis_data.dta
+
+. 
+. ** TASK 9: Finalize
+. display "Script completed: $S_DATE $S_TIME"
+Script completed: 26 Feb 2026 17:18:14
+
+. log close
+      name:  <unnamed>
+       log:  C:\Users\citla\Downloads\PS5\logs/ps5.lo
+> g
+  log type:  text
+ closed on:  26 Feb 2026, 17:18:14
+-----------------------------------------------------
